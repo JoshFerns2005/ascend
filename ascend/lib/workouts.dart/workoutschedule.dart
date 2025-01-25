@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkoutSchedulePage extends StatefulWidget {
@@ -33,15 +34,43 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
 
   Map<String, List<String>> workoutSchedule =
       {}; // Store exercises for each day
+  String? userId; // Variable to store the current user's ID
 
-  // Function to fetch the user's current schedule
+  @override
+  void initState() {
+    super.initState();
+    loadUserIdAndSchedule(); // Fetch user-specific ID and schedule on init
+  }
+
+  // Function to fetch the user's ID and schedule
+  Future<void> loadUserIdAndSchedule() async {
+    try {
+      final userBox = Hive.box<String>('userBox'); // Open the user box
+      userId = userBox.get('userId'); // Retrieve user ID from Hive
+
+      if (userId == null) {
+        print('No user logged in');
+        return;
+      }
+
+      await fetchUserSchedule(); // Fetch the schedule for this user
+    } catch (e) {
+      print('Error loading user ID or schedule: $e');
+    }
+  }
+
+  // Fetch the user's current schedule from Supabase
   Future<void> fetchUserSchedule() async {
     try {
-      final userId = 1; // Replace with the actual user ID
+      if (userId == null) {
+        print('No user logged in'); // Handle the null case explicitly
+        return;
+      }
+
       final response = await supabase
           .from('workout_schedule')
           .select('day_of_week, exercises')
-          .eq('user_id', userId);
+          .eq('user_id', userId!); // Use the non-null assertion operator (!)
 
       if (response.isNotEmpty) {
         for (var item in response) {
@@ -50,12 +79,13 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
           workoutSchedule[day] = exercises;
         }
       }
+      setState(() {}); // Update the UI
     } catch (e) {
       print('Error fetching user schedule: $e');
     }
   }
 
-  // Function to update the selected exercises for a day
+  // Update the selected exercises for a specific day
   void updateSelectedExercises(String exercise, bool isSelected) {
     setState(() {
       workoutSchedule[selectedDay] ??= [];
@@ -67,9 +97,16 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
     });
   }
 
+  // Save the schedule to the database for the current user
   Future<void> saveToDatabase() async {
     try {
-      final userId = 1; // Replace with the actual user ID
+      // Check if userId is null
+      final userId =
+          Hive.box<String>('userBox').get('userId'); // Retrieve userId
+      if (userId == null) {
+        print('No user logged in');
+        return;
+      }
 
       // Iterate through the workout schedule map
       for (var day in workoutSchedule.keys) {
@@ -79,27 +116,28 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         final existingSchedule = await supabase
             .from('workout_schedule')
             .select()
-            .eq('user_id', userId)
+            .eq('user_id', userId) // userId is now non-null
             .eq('day_of_week', day)
-            .single();
+            .maybeSingle();
 
         if (existingSchedule != null) {
           // If schedule exists, update it
           await supabase
               .from('workout_schedule')
               .update({'exercises': exercises})
-              .eq('user_id', userId)
+              .eq('user_id', userId) // userId is now non-null
               .eq('day_of_week', day);
         } else {
           // If schedule doesn't exist, insert a new row
           await supabase.from('workout_schedule').insert({
-            'user_id': userId,
+            'user_id': userId, // userId is now non-null
             'day_of_week': day,
             'exercises': exercises,
           });
         }
       }
 
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Workout schedule saved successfully!')),
       );
@@ -109,12 +147,6 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         SnackBar(content: Text('Error saving workout schedule.')),
       );
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchUserSchedule(); // Fetch user's existing schedule
   }
 
   @override
@@ -172,6 +204,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                       itemCount: exercises.length,
                       itemBuilder: (context, index) {
                         final exercise = exercises[index];
+                        // Dynamically set the checkbox state based on the schedule
                         final isSelected =
                             workoutSchedule[selectedDay]?.contains(exercise) ??
                                 false;

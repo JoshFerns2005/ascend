@@ -12,6 +12,7 @@ class SigninScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController(); // New Phone Controller
 
   Future<void> signUp(BuildContext context) async {
     try {
@@ -20,6 +21,15 @@ class SigninScreen extends StatelessWidget {
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
       String dob = dobController.text.trim();
+      String phone = phoneController.text.trim();
+
+      // Validate phone number
+      if (!RegExp(r'^\d{10,15}$').hasMatch(phone)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invalid phone number. Enter 10-15 digits.')),
+        );
+        return;
+      }
 
       // Validate DOB
       if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dob)) {
@@ -29,11 +39,13 @@ class SigninScreen extends StatelessWidget {
         return;
       }
 
+      // Insert user data into Supabase
       final response = await supabase.from('useraccounts').insert({
         'name': name,
         'email': email,
         'password': password,
         'date_of_birth': dob,
+        'phone': phone, // Add phone to the database
       });
 
       if (response.error == null) {
@@ -108,6 +120,20 @@ class SigninScreen extends StatelessWidget {
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.9),
                       hintText: 'Create a password',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  // Phone number field
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.9),
+                      hintText: 'Enter your phone number',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),

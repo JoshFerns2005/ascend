@@ -99,6 +99,9 @@ class LoginScreen extends StatelessWidget {
                             .single();
 
                         if (response != null) {
+                          // Print the user ID to the console
+                          print('User ID: ${response['id']}');
+
                           // Generate token
                           String authToken = generateAuthToken();
 
@@ -113,6 +116,7 @@ class LoginScreen extends StatelessWidget {
                           userBox.put('username', response['name']);
                           userBox.put('userId', response['id'].toString());
                           userBox.put('authToken', authToken);
+
                           // Navigate to HomeScreen
                           Navigator.pushReplacement(
                             context,
