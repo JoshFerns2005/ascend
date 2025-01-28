@@ -3,8 +3,9 @@ import 'dart:math';
 
 class JointDeg {
   final Pose pose;
+  final double cameraHeight;  // Add camera height to adjust angles
 
-  JointDeg(this.pose);
+  JointDeg(this.pose, {this.cameraHeight = 1.6});
 
   String? getLeftHip() {
     double? deg = findAngle(pose.landmarks[PoseLandmarkType.leftKnee], pose.landmarks[PoseLandmarkType.leftHip], pose.landmarks[PoseLandmarkType.leftShoulder]);
@@ -67,11 +68,20 @@ class JointDeg {
     if (A == null || B == null || C == null) {
       return null;
     }
+    
+    // Adjust for camera position before calculating the angle
+    double adjustedAX = translateX(A.x, B.x, C.x);
+    double adjustedAY = translateY(A.y, B.y, C.y);
+    double adjustedBX = translateX(B.x, A.x, C.x);
+    double adjustedBY = translateY(B.y, A.y, C.y);
+    double adjustedCX = translateX(C.x, A.x, B.x);
+    double adjustedCY = translateY(C.y, A.y, B.y);
+
     // Vector AB and BC calculations
-    double AB_x = A.x - B.x;
-    double AB_y = A.y - B.y;
-    double BC_x = C.x - B.x;
-    double BC_y = C.y - B.y;
+    double AB_x = adjustedAX - adjustedBX;
+    double AB_y = adjustedAY - adjustedBY;
+    double BC_x = adjustedCX - adjustedBX;
+    double BC_y = adjustedCY - adjustedBY;
 
     // Dot product of vectors AB and BC
     double dot = dotProduct(AB_x, AB_y, BC_x, BC_y);
@@ -100,5 +110,14 @@ class JointDeg {
   // Function to calculate vector magnitude
   double vectorMagnitude(double x, double y) {
     return sqrt(x * x + y * y);
+  }
+
+  // Add methods to adjust for camera height
+  double translateX(double x, double referenceX1, double referenceX2) {
+    return x * cameraHeight / (referenceX1 - referenceX2);
+  }
+
+  double translateY(double y, double referenceY1, double referenceY2) {
+    return y * cameraHeight / (referenceY1 - referenceY2);
   }
 }

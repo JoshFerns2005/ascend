@@ -17,7 +17,7 @@ class CameraView extends StatefulWidget {
       : super(key: key);
 
   final CustomPaint? customPaint;
-  final Function(InputImage inputImage) onImage;
+  final Function(InputImage inputImage, InputImageRotation rotation) onImage;
   final VoidCallback? onCameraFeedReady;
   final VoidCallback? onDetectorViewModeChanged;
   final Function(CameraLensDirection direction)? onCameraLensDirectionChanged;
@@ -307,11 +307,34 @@ class _CameraViewState extends State<CameraView> {
     setState(() => _changingCameraLens = false);
   }
 
-  void _processCameraImage(CameraImage image) {
-    final inputImage = _inputImageFromCameraImage(image);
-    if (inputImage == null) return;
-    widget.onImage(inputImage);
+ void _processCameraImage(CameraImage image) {
+  final inputImage = _inputImageFromCameraImage(image);
+  if (inputImage == null) return;
+
+  // Get rotation information (already handled earlier)
+  final camera = _cameras[_cameraIndex];
+  final sensorOrientation = camera.sensorOrientation;
+  InputImageRotation? rotation;
+
+ if (Platform.isAndroid) {
+      var rotationCompensation = _orientations[_controller!.value.deviceOrientation];
+      if (rotationCompensation == null) return;
+
+      if (camera.lensDirection == CameraLensDirection.front) {
+        rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
+      } else {
+        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+      }
+      rotation = InputImageRotationValue.fromRawValue(rotationCompensation)!;
+    } else {
+      rotation = InputImageRotationValue.fromRawValue(sensorOrientation)!;
+    }
+
+  if (rotation != null) {
+    widget.onImage(inputImage, rotation);  // Pass both image and rotation
   }
+}
+
 
   final _orientations = {
     DeviceOrientation.portraitUp: 0,

@@ -10,19 +10,29 @@ double translateX(
   Size imageSize,
   InputImageRotation rotation,
   CameraLensDirection cameraLensDirection,
+  double cameraHeight // Added camera height parameter
 ) {
+  // Adjust for camera height (floor or raised)
+  double adjustmentFactor = 1.0;
+
+  if (cameraHeight < 1.5) { // If camera is closer to the ground, more horizontal adjustments
+    adjustmentFactor = 1.2;  // This is a rough factor to adjust based on the camera's height.
+  } else if (cameraHeight > 2.0) { // If camera is raised
+    adjustmentFactor = 0.8;
+  }
+
   switch (rotation) {
     case InputImageRotation.rotation90deg:
-      return x * canvasSize.width / (Platform.isIOS ? imageSize.width : imageSize.height);
+      return (x * canvasSize.width / (Platform.isIOS ? imageSize.width : imageSize.height)) * adjustmentFactor;
     case InputImageRotation.rotation270deg:
-      return canvasSize.width - x * canvasSize.width / (Platform.isIOS ? imageSize.width : imageSize.height);
+      return (canvasSize.width - x * canvasSize.width / (Platform.isIOS ? imageSize.width : imageSize.height)) * adjustmentFactor;
     case InputImageRotation.rotation0deg:
     case InputImageRotation.rotation180deg:
       switch (cameraLensDirection) {
         case CameraLensDirection.back:
-          return x * canvasSize.width / imageSize.width;
+          return (x * canvasSize.width / imageSize.width) * adjustmentFactor;
         default:
-          return canvasSize.width - x * canvasSize.width / imageSize.width;
+          return (canvasSize.width - x * canvasSize.width / imageSize.width) * adjustmentFactor;
       }
   }
 }
@@ -33,13 +43,23 @@ double translateY(
   Size imageSize,
   InputImageRotation rotation,
   CameraLensDirection cameraLensDirection,
+  double cameraHeight // Added camera height parameter
 ) {
+  // Adjust for camera height
+  double adjustmentFactor = 1.0;
+
+  if (cameraHeight < 1.5) { // If camera is closer to the ground
+    adjustmentFactor = 1.2;
+  } else if (cameraHeight > 2.0) { // If camera is raised
+    adjustmentFactor = 0.8;
+  }
+
   switch (rotation) {
     case InputImageRotation.rotation90deg:
     case InputImageRotation.rotation270deg:
-      return y * canvasSize.height / (Platform.isIOS ? imageSize.height : imageSize.width);
+      return (y * canvasSize.height / (Platform.isIOS ? imageSize.height : imageSize.width)) * adjustmentFactor;
     case InputImageRotation.rotation0deg:
     case InputImageRotation.rotation180deg:
-      return y * canvasSize.height / imageSize.height;
+      return (y * canvasSize.height / imageSize.height) * adjustmentFactor;
   }
 }

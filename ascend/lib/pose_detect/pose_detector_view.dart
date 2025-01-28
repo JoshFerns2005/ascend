@@ -7,11 +7,14 @@ import 'detector_view.dart';
 import 'painters/pose_painter.dart';
 
 class PoseDetectorView extends StatefulWidget {
-  const PoseDetectorView({super.key});
+  final Function(InputImage inputImage)? onImage; // Add this line
+
+  const PoseDetectorView({super.key, this.onImage}); // Add this parameter
 
   @override
   State<StatefulWidget> createState() => _PoseDetectorViewState();
 }
+
 
 class _PoseDetectorViewState extends State<PoseDetectorView> {
   final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
@@ -40,20 +43,24 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
     );
   }
 
-  //감지결과 처리 메소드
-  Future<void> _processImage(InputImage inputImage) async {
+  // Modified to accept InputImage and InputImageRotation
+  Future<void> _processImage(InputImage inputImage, InputImageRotation rotation) async {
     if (!_canProcess) return;
     if (_isBusy) return;
     _isBusy = true;
     setState(() {
       _text = '';
     });
+
+    // Process the image using the pose detector
     final poses = await _poseDetector.processImage(inputImage);
+
     if (inputImage.metadata?.size != null && inputImage.metadata?.rotation != null) {
+      // Create a painter with updated rotation
       final painter = PosePainter(
         poses,
         inputImage.metadata!.size,
-        inputImage.metadata!.rotation,
+        rotation, // Use the rotation passed here
         _cameraLensDirection,
       );
       _customPaint = CustomPaint(painter: painter);
@@ -62,6 +69,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
       // TODO: set _customPaint to draw landmarks on top of image
       _customPaint = null;
     }
+
     _isBusy = false;
     if (mounted) {
       setState(() {});

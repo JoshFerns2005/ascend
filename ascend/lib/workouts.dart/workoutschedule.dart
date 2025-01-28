@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkoutSchedulePage extends StatefulWidget {
@@ -30,6 +29,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
     'Deadlifts',
     'Burpees',
     'Crunches',
+    'Rest',
   ]; // Predefined exercises list
 
   Map<String, List<String>> workoutSchedule =
@@ -45,14 +45,12 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   // Function to fetch the user's ID and schedule
   Future<void> loadUserIdAndSchedule() async {
     try {
-      final userBox = Hive.box<String>('userBox'); // Open the user box
-      userId = userBox.get('userId'); // Retrieve user ID from Hive
-
-      if (userId == null) {
+      final user = supabase.auth.currentUser; // Get current user from Supabase auth
+      if (user == null) {
         print('No user logged in');
         return;
       }
-
+      userId = user.id; // Retrieve user ID from Supabase auth
       await fetchUserSchedule(); // Fetch the schedule for this user
     } catch (e) {
       print('Error loading user ID or schedule: $e');
@@ -70,7 +68,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
       final response = await supabase
           .from('workout_schedule')
           .select('day_of_week, exercises')
-          .eq('user_id', userId!); // Use the non-null assertion operator (!)
+          .eq('user_id', userId!); // Use the current user's ID
 
       if (response.isNotEmpty) {
         for (var item in response) {
@@ -100,9 +98,6 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   // Save the schedule to the database for the current user
   Future<void> saveToDatabase() async {
     try {
-      // Check if userId is null
-      final userId =
-          Hive.box<String>('userBox').get('userId'); // Retrieve userId
       if (userId == null) {
         print('No user logged in');
         return;
@@ -116,7 +111,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         final existingSchedule = await supabase
             .from('workout_schedule')
             .select()
-            .eq('user_id', userId) // userId is now non-null
+            .eq('user_id', userId!) // userId is now non-null
             .eq('day_of_week', day)
             .maybeSingle();
 
@@ -125,7 +120,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
           await supabase
               .from('workout_schedule')
               .update({'exercises': exercises})
-              .eq('user_id', userId) // userId is now non-null
+              .eq('user_id', userId!) // userId is now non-null
               .eq('day_of_week', day);
         } else {
           // If schedule doesn't exist, insert a new row
@@ -153,8 +148,10 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Workout Schedule'),
+        title: Text('Workout Schedule',
+        style: TextStyle(color: Colors.white),),
         backgroundColor: Color.fromARGB(255, 0, 43, 79),
+        automaticallyImplyLeading: false,
       ),
       body: Row(
         children: [
@@ -206,8 +203,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                         final exercise = exercises[index];
                         // Dynamically set the checkbox state based on the schedule
                         final isSelected =
-                            workoutSchedule[selectedDay]?.contains(exercise) ??
-                                false;
+                            workoutSchedule[selectedDay]?.contains(exercise) ?? false;
                         return CheckboxListTile(
                           title: Text(exercise),
                           value: isSelected,

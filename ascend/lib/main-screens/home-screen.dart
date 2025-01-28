@@ -1,26 +1,40 @@
+import 'package:ascend/main-screens/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:ascend/navbar.dart'; // Import BottomNavBar
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'workout.dart';
 import 'nutrition.dart';
 import 'profile.dart';
 import 'package:ascend/main-screens/home-page.dart';
 
 class HomeScreen extends StatefulWidget {
-  final String username; // Add username property
+  final String username;
 
-  HomeScreen({required this.username}); // Constructor to accept username
+  HomeScreen({required this.username});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  late final SupabaseClient supabase;
 
-  // Updated screens list to pass username
+  @override
+  void initState() {
+    super.initState();
+    supabase = Supabase.instance.client;
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  // Check if the user is authenticated before navigating to ProfileScreen
   late final List<Widget> _screens = [
-    HomePage(username: widget.username), // Pass the username
+    HomePage(username: widget.username), // Pass the username to HomePage
     WorkoutPage(),
     NutritionPage(),
     ProfileScreen(),
@@ -46,35 +60,37 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Welcome, ${widget.username}"), // Display username in the title
-        titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
-        backgroundColor: const Color.fromARGB(255, 0, 43, 79),
+        title: Text(
+          "Welcome, ${widget.username}",
+          style: TextStyle(color: Colors.white, fontSize: 20),
+        ),
+        toolbarHeight: 75,
+        backgroundColor: Color.fromARGB(255, 0, 28, 50),
+        iconTheme:
+            IconThemeData(color: Colors.white), // Update icon theme color
+        automaticallyImplyLeading: false, // Remove the back button
         actions: [
           IconButton(
-            icon: Icon(Icons.settings, color: Colors.white),
+            icon: Icon(Icons.settings), // Add your desired icon
             onPressed: () {
-              // Navigate to settings or perform any action
-              print('Settings icon pressed');
+              // Define the action for the icon, e.g., navigate to settings
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsPage()),
+              );
             },
           ),
         ],
-        automaticallyImplyLeading: false, // Removes the back button
       ),
-      body: _screens[_selectedIndex], // Display content based on selected tab
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: _bottomNavItems, // Using the items list
+        items: _bottomNavItems,
       ),
     );
   }

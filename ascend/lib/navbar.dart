@@ -23,9 +23,9 @@ class _BottomNavBarState extends State<BottomNavBar> {
       currentIndex: widget.currentIndex,
       onTap: widget.onTap,
       type: BottomNavigationBarType.fixed, // Fixed for more than 3 items
-      selectedItemColor: Colors.blueAccent,
-      unselectedItemColor: Colors.grey,
-      backgroundColor: Colors.white,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: const Color.fromARGB(255, 76, 76, 76),
+      backgroundColor: Color.fromARGB(255, 0, 28, 50),
       items: widget.items, // Using the items parameter
     );
   }

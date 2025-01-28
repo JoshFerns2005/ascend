@@ -6,11 +6,12 @@ import 'camera_view.dart';
 
 enum DetectorViewMode { liveFeed, gallery }
 
+// In DetectorView:
 class DetectorView extends StatefulWidget {
   DetectorView({
     Key? key,
     required this.title,
-    required this.onImage,
+    required this.onImage, // Update this to accept both InputImage and InputImageRotation
     this.customPaint,
     this.text,
     this.initialDetectionMode = DetectorViewMode.liveFeed,
@@ -24,7 +25,7 @@ class DetectorView extends StatefulWidget {
   final CustomPaint? customPaint;
   final String? text;
   final DetectorViewMode initialDetectionMode;
-  final Function(InputImage inputImage) onImage;
+  final Function(InputImage inputImage, InputImageRotation rotation) onImage; // Updated here
   final Function()? onCameraFeedReady;
   final Function(DetectorViewMode mode)? onDetectorViewModeChanged;
   final Function(CameraLensDirection direction)? onCameraLensDirectionChanged;
@@ -37,21 +38,25 @@ class DetectorView extends StatefulWidget {
 class _DetectorViewState extends State<DetectorView> {
   late DetectorViewMode _mode;
 
+  // Variable to track the current camera lens direction
+  late CameraLensDirection _cameraLensDirection;
+
   @override
   void initState() {
-    _mode = widget.initialDetectionMode;
     super.initState();
+    _mode = widget.initialDetectionMode;
+    _cameraLensDirection = widget.initialCameraLensDirection;
   }
 
   @override
   Widget build(BuildContext context) {
     return CameraView(
       customPaint: widget.customPaint,
-      onImage: widget.onImage,
+      onImage: widget.onImage, // This now accepts both InputImage and InputImageRotation
       onCameraFeedReady: widget.onCameraFeedReady,
       onDetectorViewModeChanged: _onDetectorViewModeChanged,
-      initialCameraLensDirection: widget.initialCameraLensDirection,
-      onCameraLensDirectionChanged: widget.onCameraLensDirectionChanged,
+      initialCameraLensDirection: _cameraLensDirection,
+      onCameraLensDirectionChanged: _onCameraLensDirectionChanged,
     );
   }
 
@@ -65,5 +70,15 @@ class _DetectorViewState extends State<DetectorView> {
       widget.onDetectorViewModeChanged!(_mode);
     }
     setState(() {});
+  }
+
+  void _onCameraLensDirectionChanged(CameraLensDirection direction) {
+    setState(() {
+      _cameraLensDirection = direction;
+    });
+
+    if (widget.onCameraLensDirectionChanged != null) {
+      widget.onCameraLensDirectionChanged!(direction);
+    }
   }
 }
