@@ -72,40 +72,130 @@ class PosePainter extends CustomPainter {
         final PoseLandmark joint2 = pose.landmarks[type2]!;
         canvas.drawLine(
             Offset(
-                translateX(
-                  joint1.x,
-                  size,
-                  imageSize,
-                  rotation,
-                  cameraLensDirection,
-                  1.6
-                ),
-                translateY(
-                  joint1.y,
-                  size,
-                  imageSize,
-                  rotation,
-                  cameraLensDirection,
-                  1.6
-                )),
+                translateX(joint1.x, size, imageSize, rotation,
+                    cameraLensDirection, 1.6),
+                translateY(joint1.y, size, imageSize, rotation,
+                    cameraLensDirection, 1.6)),
             Offset(
-                translateX(
-                  joint2.x,
-                  size,
-                  imageSize,
-                  rotation,
-                  cameraLensDirection,
-                  1.6
-                ),
-                translateY(
-                  joint2.y,
-                  size,
-                  imageSize,
-                  rotation,
-                  cameraLensDirection,
-                  1.6
-                )),
+                translateX(joint2.x, size, imageSize, rotation,
+                    cameraLensDirection, 1.6),
+                translateY(joint2.y, size, imageSize, rotation,
+                    cameraLensDirection, 1.6)),
             paintType);
+      }
+
+      bool isPoseCorrect(Pose pose) {
+        final shoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+        final elbow = pose.landmarks[PoseLandmarkType.rightElbow];
+        final knee = pose.landmarks[PoseLandmarkType.rightKnee];
+
+        // Example: Right shoulder should be at a specific height compared to elbow
+        if (shoulder != null && elbow != null) {
+          // Add logic based on the distance between these joints or angles
+          return shoulder.y >
+              elbow.y; // This is just an example; modify as needed
+        }
+
+        // Check other landmarks for additional checks
+        if (knee != null) {
+          return knee.y > 0.5; // Just as an example, modify as necessary
+        }
+
+        return false; // Default to false if landmarks are missing or conditions not met
+      }
+
+      void paintPoseFeedback(Canvas canvas, Pose pose) {
+        final Paint feedbackPaint = Paint()
+          ..style = PaintingStyle.fill
+          ..color = isPoseCorrect(pose) ? Colors.green : Colors.red;
+
+        final posePosition = pose.landmarks[PoseLandmarkType.rightShoulder];
+        if (posePosition != null) {
+          canvas.drawCircle(
+              Offset(
+                  translateX(posePosition.x, size, imageSize, rotation,
+                      cameraLensDirection, 1.6),
+                  translateY(posePosition.y, size, imageSize, rotation,
+                      cameraLensDirection, 1.6)),
+              10,
+              feedbackPaint);
+        }
+      }
+
+      void drawVerticalThresholdLine(Canvas canvas, Size size) {
+        final thresholdX = size.width *
+            0.5; // Set this based on where you want the vertical line
+        final paint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0
+          ..color = Colors.red;
+          print("Drawing Vertical Threshold Line");
+
+        // Draw the vertical threshold line
+        canvas.drawLine(
+          Offset(thresholdX, 0),
+          Offset(thresholdX, size.height),
+          paint,
+        );
+      }
+
+      void drawHorizontalThresholdLine(Canvas canvas, Size size) {
+        final thresholdY =
+            size.height * 0.7; // Adjust this value for squat threshold
+        final paint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0
+          ..color = Colors.blue;
+          print("Drawing horizontal Threshold Line");
+
+        // Draw the horizontal threshold line
+        canvas.drawLine(
+          Offset(0, thresholdY),
+          Offset(size.width, thresholdY),
+          paint,
+        );
+      }
+
+      bool isCrossedThresholdVertical = false;
+
+      void checkPushUpCrossing(Pose pose, Size size) {
+        final thresholdX = size.width * 0.5; // Vertical line position
+
+        final shoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+
+        if (shoulder != null) {
+          bool isCurrentlyCrossed =
+              shoulder.x > thresholdX; // Check if the shoulder crosses the line
+
+          if (isCurrentlyCrossed && !isCrossedThresholdVertical) {
+            isCrossedThresholdVertical = true;
+            // Push-up completed, increment counter
+            print("Push-up completed!");
+          } else if (!isCurrentlyCrossed && isCrossedThresholdVertical) {
+            isCrossedThresholdVertical = false;
+          }
+        }
+      }
+
+      bool isCrossedThresholdHorizontal = false;
+
+      void checkSquatCrossing(Pose pose, Size size) {
+        final thresholdY = size.height * 0.7; // Horizontal line position
+
+        final hip = pose.landmarks[PoseLandmarkType.leftHip];
+
+        if (hip != null) {
+          bool isCurrentlyCrossed =
+              hip.y > thresholdY; // Check if the hip crosses the line
+
+          if (isCurrentlyCrossed && !isCrossedThresholdHorizontal) {
+            isCrossedThresholdHorizontal = true;
+            // Squat completed, increment counter
+            print("Squat completed!");
+          } else if (!isCurrentlyCrossed && isCrossedThresholdHorizontal) {
+            isCrossedThresholdHorizontal = false;
+          }
+        }
       }
 
       void paintText(PoseLandmarkType type) {
@@ -137,22 +227,10 @@ class PosePainter extends CustomPainter {
         }
         drawText(
             canvas,
-            translateX(
-              pose.landmarks[type]!.x,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-              1.6
-            ),
-            translateY(
-              pose.landmarks[type]!.y,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-              1.6
-            ),
+            translateX(pose.landmarks[type]!.x, size, imageSize, rotation,
+                cameraLensDirection, 1.6),
+            translateY(pose.landmarks[type]!.y, size, imageSize, rotation,
+                cameraLensDirection, 1.6),
             deg);
       }
 

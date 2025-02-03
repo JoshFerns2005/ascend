@@ -1,13 +1,13 @@
 import 'package:ascend/main-screens/home-page.dart';
 import 'package:ascend/start-screen/splashHomeScreen.dart';
-import 'package:ascend/workouts.dart/bulk.dart';
-import 'package:ascend/workouts.dart/cut.dart';
-import 'package:ascend/workouts.dart/fit.dart';
-import 'package:ascend/workouts.dart/workoutschedule.dart';
+import 'package:ascend/workouts/bulk.dart';
+import 'package:ascend/workouts/cut.dart';
+import 'package:ascend/workouts/fit.dart';
+import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 
-import '../workouts.dart/random_exercises/pushup.dart';
-import '../workouts.dart/random_exercises/squat.dart';
+import '../workouts/random_exercises/pushup.dart';
+import '../workouts/random_exercises/squat.dart';
 
 class WorkoutPage extends StatefulWidget {
   @override
@@ -34,6 +34,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(200, 0, 43, 79),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: ListView(
@@ -64,7 +65,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   itemBuilder: (context, index) {
                     String category = _workouts.keys.elementAt(index);
                     return GestureDetector(
-                      onTap: () => _navigateToWorkoutCategory(context, category),
+                      onTap: () =>
+                          _navigateToWorkoutCategory(context, category),
                       child: WorkoutCategoryCard(category: category),
                     );
                   },
@@ -81,9 +83,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.add, color: Colors.blue),
+                      Icon(Icons.add, color: Colors.white),
                       SizedBox(width: 8),
-                      Text('Add Exercise', style: TextStyle(fontSize: 16)),
+                      Text('Add Exercise',
+                          style: TextStyle(fontSize: 16, color: Colors.white)),
                     ],
                   ),
                   SizedBox(height: 10),
@@ -109,9 +112,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 0, 43, 79),
+                  backgroundColor: Color.fromARGB(255, 1, 28, 51),
                 ),
-                child: Text('View Workout Schedule',style: TextStyle(color: Colors.white),),
+                child: Text(
+                  'View Workout Schedule',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -122,6 +128,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Widget buildCard({required String title, required Widget content}) {
     return Card(
+      color: Color.fromARGB(255, 0, 43, 79),
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       margin: EdgeInsets.symmetric(vertical: 10),
@@ -135,7 +142,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 0, 43, 79),
+                color: Colors.white,
               ),
             ),
             SizedBox(height: 10),
@@ -146,27 +153,26 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-void _navigateToWorkoutCategory(BuildContext context, String category) {
-  Widget targetPage;
-  switch (category) {
-    case 'Cut':
-      targetPage = CutDetailPage();
-      break;
-    case 'Bulk':
-      targetPage = BulkDetailPage();
-      break;
-    case 'Stay Fit':
-      targetPage = FitDetailPage();
-      break;
-    default:
-      targetPage = Splashhomescreen(); // Fallback for unknown categories
+  void _navigateToWorkoutCategory(BuildContext context, String category) {
+    Widget targetPage;
+    switch (category) {
+      case 'Cut':
+        targetPage = CutDetailPage();
+        break;
+      case 'Bulk':
+        targetPage = BulkDetailPage();
+        break;
+      case 'Stay Fit':
+        targetPage = FitDetailPage();
+        break;
+      default:
+        targetPage = Splashhomescreen(); // Fallback for unknown categories
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => targetPage),
+    );
   }
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => targetPage),
-  );
-}
-
 }
 
 class ExerciseCardWithImage extends StatelessWidget {
@@ -250,7 +256,8 @@ class ExerciseCardWithImage extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             exercise,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ],
       ),
@@ -283,7 +290,8 @@ class WorkoutCategoryCard extends StatelessWidget {
     return Column(
       children: [
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           margin: EdgeInsets.symmetric(horizontal: 8),
           elevation: 3,
           child: ClipRRect(
@@ -299,32 +307,32 @@ class WorkoutCategoryCard extends StatelessWidget {
         SizedBox(height: 8),
         Text(
           category,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ],
     );
   }
 }
+
 class ExerciseCard extends StatelessWidget {
-    final String name;
+  final String name;
 
-    ExerciseCard({required this.name});
+  ExerciseCard({required this.name});
 
-    @override
-    Widget build(BuildContext context) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: EdgeInsets.symmetric(horizontal: 8),
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Text(
-            name,
-            style: TextStyle(fontSize: 16),
-          ),
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Text(
+          name,
+          style: TextStyle(fontSize: 16, color: Colors.white),
         ),
-      );
-    }
+      ),
+    );
   }
-
-
+}

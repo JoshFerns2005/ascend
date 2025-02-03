@@ -1,4 +1,4 @@
-import 'package:ascend/workouts.dart/workoutschedule.dart';
+import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

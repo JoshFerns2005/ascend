@@ -1,81 +1,115 @@
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'dart:math';
 
 class JointDeg {
   final Pose pose;
-  final double cameraHeight;  // Add camera height to adjust angles
+  final double cameraHeight; // Add camera height to adjust angles
 
   JointDeg(this.pose, {this.cameraHeight = 1.6});
 
   String? getLeftHip() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.leftKnee], pose.landmarks[PoseLandmarkType.leftHip], pose.landmarks[PoseLandmarkType.leftShoulder]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.leftKnee],
+        pose.landmarks[PoseLandmarkType.leftHip],
+        pose.landmarks[PoseLandmarkType.leftShoulder]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getRightHip() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.rightKnee], pose.landmarks[PoseLandmarkType.rightHip], pose.landmarks[PoseLandmarkType.rightShoulder]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.rightKnee],
+        pose.landmarks[PoseLandmarkType.rightHip],
+        pose.landmarks[PoseLandmarkType.rightShoulder]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getRightKnee() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.rightAnkle], pose.landmarks[PoseLandmarkType.rightKnee], pose.landmarks[PoseLandmarkType.rightHip]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.rightAnkle],
+        pose.landmarks[PoseLandmarkType.rightKnee],
+        pose.landmarks[PoseLandmarkType.rightHip]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getRightHeel() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.rightKnee], pose.landmarks[PoseLandmarkType.rightHeel], pose.landmarks[PoseLandmarkType.rightFootIndex]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.rightKnee],
+        pose.landmarks[PoseLandmarkType.rightHeel],
+        pose.landmarks[PoseLandmarkType.rightFootIndex]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getRightShoulder() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.rightHip], pose.landmarks[PoseLandmarkType.rightShoulder], pose.landmarks[PoseLandmarkType.rightElbow]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.rightHip],
+        pose.landmarks[PoseLandmarkType.rightShoulder],
+        pose.landmarks[PoseLandmarkType.rightElbow]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getRightNeck() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.rightHip], pose.landmarks[PoseLandmarkType.rightShoulder], pose.landmarks[PoseLandmarkType.rightEar]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.rightHip],
+        pose.landmarks[PoseLandmarkType.rightShoulder],
+        pose.landmarks[PoseLandmarkType.rightEar]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getLeftShoulder() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.leftHip], pose.landmarks[PoseLandmarkType.leftShoulder], pose.landmarks[PoseLandmarkType.leftElbow]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.leftHip],
+        pose.landmarks[PoseLandmarkType.leftShoulder],
+        pose.landmarks[PoseLandmarkType.leftElbow]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getLeftElbow() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.leftShoulder], pose.landmarks[PoseLandmarkType.leftElbow], pose.landmarks[PoseLandmarkType.leftWrist]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.leftShoulder],
+        pose.landmarks[PoseLandmarkType.leftElbow],
+        pose.landmarks[PoseLandmarkType.leftWrist]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getRightElbow() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.rightShoulder], pose.landmarks[PoseLandmarkType.rightElbow], pose.landmarks[PoseLandmarkType.rightWrist]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.rightShoulder],
+        pose.landmarks[PoseLandmarkType.rightElbow],
+        pose.landmarks[PoseLandmarkType.rightWrist]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getLeftKnee() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.leftAnkle], pose.landmarks[PoseLandmarkType.leftKnee], pose.landmarks[PoseLandmarkType.leftHip]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.leftAnkle],
+        pose.landmarks[PoseLandmarkType.leftKnee],
+        pose.landmarks[PoseLandmarkType.leftHip]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
 
   String? getLeftHeel() {
-    double? deg = findAngle(pose.landmarks[PoseLandmarkType.leftKnee], pose.landmarks[PoseLandmarkType.leftHeel], pose.landmarks[PoseLandmarkType.leftFootIndex]);
+    double? deg = findAngle(
+        pose.landmarks[PoseLandmarkType.leftKnee],
+        pose.landmarks[PoseLandmarkType.leftHeel],
+        pose.landmarks[PoseLandmarkType.leftFootIndex]);
     return (deg == null) ? null : deg.toStringAsFixed(1);
   }
-
 
   // Function to find the angle between three landmarks
   double? findAngle(PoseLandmark? A, PoseLandmark? B, PoseLandmark? C) {
     if (A == null || B == null || C == null) {
       return null;
     }
-    
+
     // Adjust for camera position before calculating the angle
-    double adjustedAX = translateX(A.x, B.x, C.x);
-    double adjustedAY = translateY(A.y, B.y, C.y);
-    double adjustedBX = translateX(B.x, A.x, C.x);
-    double adjustedBY = translateY(B.y, A.y, C.y);
-    double adjustedCX = translateX(C.x, A.x, B.x);
-    double adjustedCY = translateY(C.y, A.y, B.y);
+    double adjustedAX = translateX(A.x, cameraHeight);
+    double adjustedAY = translateY(A.y, cameraHeight);
+    double adjustedBX = translateX(B.x, cameraHeight);
+    double adjustedBY = translateY(B.y, cameraHeight);
+    double adjustedCX = translateX(C.x, cameraHeight);
+    double adjustedCY = translateY(C.y, cameraHeight);
 
     // Vector AB and BC calculations
     double AB_x = adjustedAX - adjustedBX;
@@ -112,12 +146,16 @@ class JointDeg {
     return sqrt(x * x + y * y);
   }
 
-  // Add methods to adjust for camera height
-  double translateX(double x, double referenceX1, double referenceX2) {
-    return x * cameraHeight / (referenceX1 - referenceX2);
+// Translate X based on camera height
+// Adjusts the X-coordinate based on the camera height
+  double translateX(double x, double cameraHeight) {
+    // Assuming x is in the range [0, 1] for normalized coordinates
+    return x * cameraHeight; // Adjust based on the camera's scaling
   }
 
-  double translateY(double y, double referenceY1, double referenceY2) {
-    return y * cameraHeight / (referenceY1 - referenceY2);
+// Adjusts the Y-coordinate based on the camera height
+  double translateY(double y, double cameraHeight) {
+    // Assuming y is in the range [0, 1] for normalized coordinates
+    return y * cameraHeight; // Adjust based on the camera's scaling
   }
 }

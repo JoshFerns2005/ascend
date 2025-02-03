@@ -1,3 +1,4 @@
+import 'package:ascend/exercise/exercise.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,10 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   String? _text;
   var _cameraLensDirection = CameraLensDirection.back;
 
+  // Create instances of the exercise classes
+  final PushUpExercise pushUpExercise = PushUpExercise();
+  final SquatExercise squatExercise = SquatExercise();
+
   @override
   void dispose() async {
     _canProcess = false;
@@ -43,7 +48,6 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
     );
   }
 
-  // Modified to accept InputImage and InputImageRotation
   Future<void> _processImage(InputImage inputImage, InputImageRotation rotation) async {
     if (!_canProcess) return;
     if (_isBusy) return;
@@ -64,6 +68,23 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         _cameraLensDirection,
       );
       _customPaint = CustomPaint(painter: painter);
+
+      // Process the pose data for specific exercises
+      for (Pose pose in poses) {
+        // Check if the pose belongs to a specific exercise (e.g., push-up or squat)
+        // Example: Check for push-up rep
+        if (pushUpExercise.checkRep(pose)) {
+          setState(() {
+            _text = 'Push-Ups: ${pushUpExercise.repCount}';
+          });
+        }
+        // Example: Check for squat rep
+        else if (squatExercise.checkRep(pose)) {
+          setState(() {
+            _text = 'Squats: ${squatExercise.repCount}';
+          });
+        }
+      }
     } else {
       _text = 'Poses found: ${poses.length}\n\n';
       // TODO: set _customPaint to draw landmarks on top of image
