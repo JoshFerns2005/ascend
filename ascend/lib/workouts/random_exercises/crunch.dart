@@ -4,28 +4,28 @@ import 'package:ascend/pose_detect/pose_detector_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
-class SquatPage extends StatefulWidget {
+class CrunchPage extends StatefulWidget {
   @override
-  _SquatPageState createState() => _SquatPageState();
+  _CrunchPageState createState() => _CrunchPageState();
 }
 
-class _SquatPageState extends State<SquatPage> {
-  int squatCounter = 0;
+class _CrunchPageState extends State<CrunchPage> {
+  int crunchCounter = 0;
   bool isGoodForm = true;
-  bool isSquattingDown = false; // Track if the user is lowering
-  double lowerThreshold = 90.0; // Angle threshold for squat depth
-  double upperThreshold = 160.0; // Angle threshold to stand up
+  bool isCrunchingUp = false; // Track if the user is crunching up
+  double lowerThreshold = 30.0; // Torso angle threshold for crunch completion
+  double upperThreshold = 70.0; // Torso angle threshold to reset
 
   final PoseDetector _poseDetector =
       PoseDetector(options: PoseDetectorOptions());
 
-  void updateSquatCounter(double kneeAngle) {
+  void updateCrunchCounter(double torsoAngle) {
     setState(() {
-      if (kneeAngle < lowerThreshold && !isSquattingDown) {
-        isSquattingDown = true; // User is at the bottom of the squat
-      } else if (kneeAngle > upperThreshold && isSquattingDown) {
-        squatCounter++; // Squat completed
-        isSquattingDown = false;
+      if (torsoAngle < lowerThreshold && !isCrunchingUp) {
+        isCrunchingUp = true; // User is crunching up
+      } else if (torsoAngle > upperThreshold && isCrunchingUp) {
+        crunchCounter++; // Crunch completed
+        isCrunchingUp = false;
       }
     });
   }
@@ -39,19 +39,19 @@ class _SquatPageState extends State<SquatPage> {
   @override
   void initState() {
     super.initState();
-    PosePainter.nowPose = NowPoses.squat; // Set current pose to squat
+    PosePainter.nowPose = NowPoses.crunch; // Set current pose to crunch
   }
 
-  // Calculate knee angle (hip, knee, ankle)
-  double calculateAngle(Offset hip, Offset knee, Offset ankle) {
+  // Calculate torso angle (shoulder, hip, knee)
+  double calculateAngle(Offset shoulder, Offset hip, Offset knee) {
+    final shoulderToHip = Offset(hip.dx - shoulder.dx, hip.dy - shoulder.dy);
     final hipToKnee = Offset(knee.dx - hip.dx, knee.dy - hip.dy);
-    final kneeToAnkle = Offset(ankle.dx - knee.dx, ankle.dy - knee.dy);
 
-    final dotProduct = hipToKnee.dx * kneeToAnkle.dx + hipToKnee.dy * kneeToAnkle.dy;
+    final dotProduct = shoulderToHip.dx * hipToKnee.dx + shoulderToHip.dy * hipToKnee.dy;
+    final magnitudeShoulderToHip = sqrt(pow(shoulderToHip.dx, 2) + pow(shoulderToHip.dy, 2));
     final magnitudeHipToKnee = sqrt(pow(hipToKnee.dx, 2) + pow(hipToKnee.dy, 2));
-    final magnitudeKneeToAnkle = sqrt(pow(kneeToAnkle.dx, 2) + pow(kneeToAnkle.dy, 2));
 
-    final cosineTheta = dotProduct / (magnitudeHipToKnee * magnitudeKneeToAnkle);
+    final cosineTheta = dotProduct / (magnitudeShoulderToHip * magnitudeHipToKnee);
     return acos(cosineTheta) * (180.0 / pi); // Return angle in degrees
   }
 
@@ -59,7 +59,7 @@ class _SquatPageState extends State<SquatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Squat Pose Detector'),
+        title: Text('Crunch Pose Detector'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -73,17 +73,17 @@ class _SquatPageState extends State<SquatPage> {
               final poses = await _poseDetector.processImage(inputImage);
 
               if (poses.isNotEmpty) {
+                final shoulder = poses[0].landmarks[PoseLandmarkType.leftShoulder];
                 final hip = poses[0].landmarks[PoseLandmarkType.leftHip];
                 final knee = poses[0].landmarks[PoseLandmarkType.leftKnee];
-                final ankle = poses[0].landmarks[PoseLandmarkType.leftAnkle];
 
-                if (hip != null && knee != null && ankle != null) {
+                if (shoulder != null && hip != null && knee != null) {
                   final angle = calculateAngle(
+                    Offset(shoulder.x, shoulder.y),
                     Offset(hip.x, hip.y),
                     Offset(knee.x, knee.y),
-                    Offset(ankle.x, ankle.y),
                   );
-                  updateSquatCounter(angle);
+                  updateCrunchCounter(angle);
                 } else {
                   print('Missing one or more landmarks.');
                 }
@@ -91,7 +91,7 @@ class _SquatPageState extends State<SquatPage> {
             })),
             SizedBox(height: 20),
             Text(
-              'Squat Counter: $squatCounter',
+              'Crunch Counter: $crunchCounter',
               style: TextStyle(fontSize: 24),
             ),
             SizedBox(height: 10),

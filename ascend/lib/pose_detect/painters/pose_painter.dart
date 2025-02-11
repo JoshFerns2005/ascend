@@ -1,11 +1,10 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
-
 import 'coordinates_translator.dart';
 import 'joint_deg.dart';
 
-enum NowPoses { pushup, standing, overheadDeepSquat, standingForwardBend }
+enum NowPoses { pushup, squat, crunch }
 
 class PosePainter extends CustomPainter {
   PosePainter(
@@ -15,11 +14,31 @@ class PosePainter extends CustomPainter {
     this.cameraLensDirection,
   );
 
-  final List<Pose> poses;
+  final List poses;
   final Size imageSize;
   final InputImageRotation rotation;
   final CameraLensDirection cameraLensDirection;
-  static NowPoses nowPose = NowPoses.standing;
+  static NowPoses nowPose = NowPoses.pushup; // Default to pushups
+
+  // Static/global state variables for counting
+  static int pushUpCounter = 0; // Counter for push-ups
+  static bool hasGoneDown = false; // Flag to track bottom position
+  static int transitionCount = 0; // Transition count
+  static int transitionToOneCount = 0; // Transition to "1" count
+
+  // Angle thresholds
+  final double shoulderTopMin = 20.0;
+  final double shoulderTopMax = 80.0;
+  final double shoulderBottomMin = 0.0;
+  final double shoulderBottomMax = 30.0;
+  final double elbowTopMin = 140.0;
+  final double elbowTopMax = 170.0;
+  final double elbowBottomMin = 60.0;
+  final double elbowBottomMax = 90.0;
+  final double kneeTopMin = 165.0;
+  final double kneeTopMax = 185.0;
+  final double kneeBottomMin = 170.0;
+  final double kneeBottomMax = 185.0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -39,186 +58,90 @@ class PosePainter extends CustomPainter {
       ..color = Colors.blueAccent;
 
     for (final pose in poses) {
-      final JointDeg jointDeg =
-          JointDeg(pose, cameraHeight: 1.6); // Assuming camera height is 1.6m
+      final JointDeg jointDeg = JointDeg(pose, cameraHeight: 1.6);
 
+      // Retrieve angles for shoulders, elbows, and knees
+      final String? rightShoulderAngle = jointDeg.getRightShoulder();
+      final String? rightElbowAngle = jointDeg.getRightElbow();
+      final String? rightKneeAngle = jointDeg.getRightKnee();
+
+      // Convert angle strings to doubles
+      double shoulderAngle = double.tryParse(rightShoulderAngle ?? '') ?? 0.0;
+      double elbowAngle = double.tryParse(rightElbowAngle ?? '') ?? 0.0;
+      double kneeAngle = double.tryParse(rightKneeAngle ?? '') ?? 0.0;
+
+      // Print debug information
+      print(
+          'Shoulder Angle: $shoulderAngle, Elbow Angle: $elbowAngle, Knee Angle: $kneeAngle');
+
+      // Detect position and update state
+      if (isAtBottomPosition(shoulderAngle, elbowAngle, kneeAngle)) {
+        if (!hasGoneDown) {
+          hasGoneDown = true; // User has gone down
+          print('User has gone to the bottom position.');
+        }
+      } else if (isAtTopPosition(shoulderAngle, elbowAngle, kneeAngle)) {
+        if (hasGoneDown) {
+          pushUpCounter++; // Increment push-up counter
+          transitionCount++; // Increment transition count
+          transitionToOneCount++; // Increment transition to "1" count
+          hasGoneDown = false; // Reset flag so next down movement can be detected
+          print(
+              'User has gone up to top position. Push-ups: $pushUpCounter, Transitions: $transitionCount, Transition to 1 Count: $transitionToOneCount');
+        }
+      } else {
+        print('User is in a transitional state.');
+      }
+
+      // Draw landmarks and lines
       pose.landmarks.forEach((_, landmark) {
         canvas.drawCircle(
-            Offset(
-              translateX(
-                landmark.x,
-                size,
-                imageSize,
-                rotation,
-                cameraLensDirection,
-                1.6, // cameraHeight
-              ),
-              translateY(
-                landmark.y,
-                size,
-                imageSize,
-                rotation,
-                cameraLensDirection,
-                1.6, // cameraHeight
-              ),
-            ),
-            1,
-            paint);
+          Offset(
+            translateX(landmark.x, size, imageSize, rotation,
+                cameraLensDirection, 1.6),
+            translateY(landmark.y, size, imageSize, rotation,
+                cameraLensDirection, 1.6),
+          ),
+          1,
+          paint,
+        );
       });
 
       void paintLine(
           PoseLandmarkType type1, PoseLandmarkType type2, Paint paintType) {
-        final PoseLandmark joint1 = pose.landmarks[type1]!;
-        final PoseLandmark joint2 = pose.landmarks[type2]!;
-        canvas.drawLine(
-            Offset(
-                translateX(joint1.x, size, imageSize, rotation,
-                    cameraLensDirection, 1.6),
-                translateY(joint1.y, size, imageSize, rotation,
-                    cameraLensDirection, 1.6)),
-            Offset(
-                translateX(joint2.x, size, imageSize, rotation,
-                    cameraLensDirection, 1.6),
-                translateY(joint2.y, size, imageSize, rotation,
-                    cameraLensDirection, 1.6)),
-            paintType);
-      }
-
-      bool isPoseCorrect(Pose pose) {
-        final shoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-        final elbow = pose.landmarks[PoseLandmarkType.rightElbow];
-        final knee = pose.landmarks[PoseLandmarkType.rightKnee];
-
-        // Example: Right shoulder should be at a specific height compared to elbow
-        if (shoulder != null && elbow != null) {
-          // Add logic based on the distance between these joints or angles
-          return shoulder.y >
-              elbow.y; // This is just an example; modify as needed
-        }
-
-        // Check other landmarks for additional checks
-        if (knee != null) {
-          return knee.y > 0.5; // Just as an example, modify as necessary
-        }
-
-        return false; // Default to false if landmarks are missing or conditions not met
-      }
-
-      void paintPoseFeedback(Canvas canvas, Pose pose) {
-        final Paint feedbackPaint = Paint()
-          ..style = PaintingStyle.fill
-          ..color = isPoseCorrect(pose) ? Colors.green : Colors.red;
-
-        final posePosition = pose.landmarks[PoseLandmarkType.rightShoulder];
-        if (posePosition != null) {
-          canvas.drawCircle(
+        final PoseLandmark? joint1 = pose.landmarks[type1];
+        final PoseLandmark? joint2 = pose.landmarks[type2];
+        if (joint1 != null && joint2 != null) {
+          canvas.drawLine(
               Offset(
-                  translateX(posePosition.x, size, imageSize, rotation,
+                  translateX(joint1.x, size, imageSize, rotation,
                       cameraLensDirection, 1.6),
-                  translateY(posePosition.y, size, imageSize, rotation,
+                  translateY(joint1.y, size, imageSize, rotation,
                       cameraLensDirection, 1.6)),
-              10,
-              feedbackPaint);
-        }
-      }
-
-      void drawVerticalThresholdLine(Canvas canvas, Size size) {
-        final thresholdX = size.width *
-            0.5; // Set this based on where you want the vertical line
-        final paint = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0
-          ..color = Colors.red;
-          print("Drawing Vertical Threshold Line");
-
-        // Draw the vertical threshold line
-        canvas.drawLine(
-          Offset(thresholdX, 0),
-          Offset(thresholdX, size.height),
-          paint,
-        );
-      }
-
-      void drawHorizontalThresholdLine(Canvas canvas, Size size) {
-        final thresholdY =
-            size.height * 0.7; // Adjust this value for squat threshold
-        final paint = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0
-          ..color = Colors.blue;
-          print("Drawing horizontal Threshold Line");
-
-        // Draw the horizontal threshold line
-        canvas.drawLine(
-          Offset(0, thresholdY),
-          Offset(size.width, thresholdY),
-          paint,
-        );
-      }
-
-      bool isCrossedThresholdVertical = false;
-
-      void checkPushUpCrossing(Pose pose, Size size) {
-        final thresholdX = size.width * 0.5; // Vertical line position
-
-        final shoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-
-        if (shoulder != null) {
-          bool isCurrentlyCrossed =
-              shoulder.x > thresholdX; // Check if the shoulder crosses the line
-
-          if (isCurrentlyCrossed && !isCrossedThresholdVertical) {
-            isCrossedThresholdVertical = true;
-            // Push-up completed, increment counter
-            print("Push-up completed!");
-          } else if (!isCurrentlyCrossed && isCrossedThresholdVertical) {
-            isCrossedThresholdVertical = false;
-          }
-        }
-      }
-
-      bool isCrossedThresholdHorizontal = false;
-
-      void checkSquatCrossing(Pose pose, Size size) {
-        final thresholdY = size.height * 0.7; // Horizontal line position
-
-        final hip = pose.landmarks[PoseLandmarkType.leftHip];
-
-        if (hip != null) {
-          bool isCurrentlyCrossed =
-              hip.y > thresholdY; // Check if the hip crosses the line
-
-          if (isCurrentlyCrossed && !isCrossedThresholdHorizontal) {
-            isCrossedThresholdHorizontal = true;
-            // Squat completed, increment counter
-            print("Squat completed!");
-          } else if (!isCurrentlyCrossed && isCrossedThresholdHorizontal) {
-            isCrossedThresholdHorizontal = false;
-          }
+              Offset(
+                  translateX(joint2.x, size, imageSize, rotation,
+                      cameraLensDirection, 1.6),
+                  translateY(joint2.y, size, imageSize, rotation,
+                      cameraLensDirection, 1.6)),
+              paintType);
         }
       }
 
       void paintText(PoseLandmarkType type) {
         String? deg;
         switch (type) {
-          case PoseLandmarkType.leftHip:
-            deg = jointDeg.getLeftHip();
+          case PoseLandmarkType.rightShoulder:
+            deg = jointDeg.getRightShoulder();
+            break;
+          case PoseLandmarkType.rightElbow:
+            deg = jointDeg.getRightElbow();
             break;
           case PoseLandmarkType.rightHip:
             deg = jointDeg.getRightHip();
             break;
-          case PoseLandmarkType.rightKnee:
+          case PoseLandmarkType.rightKnee: // New: Handle knee angle
             deg = jointDeg.getRightKnee();
             break;
-          case PoseLandmarkType.rightHeel:
-            deg = jointDeg.getRightHeel();
-            break;
-          case PoseLandmarkType.rightShoulder:
-            deg = jointDeg.getRightShoulder();
-            break;
-          case PoseLandmarkType.rightEar:
-            deg = jointDeg.getRightNeck();
-            type = PoseLandmarkType.rightShoulder;
           default:
             return;
         }
@@ -263,33 +186,48 @@ class PosePainter extends CustomPainter {
       paintLine(PoseLandmarkType.rightHeel, PoseLandmarkType.rightFootIndex,
           rightPaint);
 
-      switch (nowPose) {
-        case NowPoses.overheadDeepSquat:
-          paintText(PoseLandmarkType.rightHip);
-          paintText(PoseLandmarkType.rightKnee);
-          paintText(PoseLandmarkType.rightHeel);
-          paintText(PoseLandmarkType.rightShoulder);
-          break;
-        case NowPoses.standingForwardBend:
-          paintText(PoseLandmarkType.leftHip);
-          break;
-        case NowPoses.standing:
-          paintText(PoseLandmarkType.rightKnee);
-          paintText(PoseLandmarkType.rightHip);
-          paintText(PoseLandmarkType.rightEar);
-          break;
-        case NowPoses.pushup:
-          paintText(PoseLandmarkType.leftShoulder);
-          paintText(PoseLandmarkType.rightShoulder);
-          paintText(PoseLandmarkType.leftElbow);
-          paintText(PoseLandmarkType.rightElbow);
-          paintText(PoseLandmarkType.leftWrist);
-          paintText(PoseLandmarkType.rightWrist);
-          paintText(PoseLandmarkType.leftHip);
-          paintText(PoseLandmarkType.rightHip);
-          break;
+      // Display angles for push-ups
+      if (NowPoses.pushup == NowPoses.pushup) {
+        paintText(PoseLandmarkType.rightShoulder);
+        paintText(PoseLandmarkType.rightElbow);
+        paintText(PoseLandmarkType.rightHip);
+        paintText(PoseLandmarkType.rightKnee); // New: Display knee angle
+
+        // Draw push-up counter and feedback
+        drawText(canvas, 80, 50, 'Push Ups: $pushUpCounter');
+        drawText(canvas, 80, 80, 'Transitions: $transitionCount');
       }
     }
+
+    // Draw feedback text
+    drawText(canvas, 80, 110, 'In Progress...');
+    // Draw transitionToOneCount in green
+    drawTextInGreen(canvas, 80, 140, 'Transition to 1 Count: $transitionToOneCount');
+  }
+
+  bool isAtBottomPosition(
+      double shoulderAngle, double elbowAngle, double kneeAngle) {
+    return shoulderAngle >= shoulderBottomMin &&
+        shoulderAngle <= shoulderBottomMax &&
+        elbowAngle >= elbowBottomMin &&
+        elbowAngle <= elbowBottomMax &&
+        kneeAngle >= kneeBottomMin &&
+        kneeAngle <= kneeBottomMax;
+  }
+
+  bool isAtTopPosition(
+      double shoulderAngle, double elbowAngle, double kneeAngle) {
+    bool result = shoulderAngle >= shoulderTopMin &&
+        shoulderAngle <= shoulderTopMax &&
+        elbowAngle >= elbowTopMin &&
+        elbowAngle <= elbowTopMax &&
+        kneeAngle >= kneeTopMin &&
+        kneeAngle <= kneeTopMax;
+    print(
+        'Top Position Check → Shoulder: $shoulderAngle ($shoulderTopMin - $shoulderTopMax), '
+        'Elbow: $elbowAngle ($elbowTopMin - $elbowTopMax), '
+        'Knee: $kneeAngle ($kneeTopMin - $kneeTopMax) → Result: $result');
+    return result;
   }
 
   @override
@@ -297,7 +235,7 @@ class PosePainter extends CustomPainter {
     return oldDelegate.imageSize != imageSize || oldDelegate.poses != poses;
   }
 
-  void drawText(Canvas canvas, centerX, centerY, text) {
+  void drawText(Canvas canvas, double centerX, double centerY, String text) {
     final textSpan = TextSpan(
       text: text,
       style: const TextStyle(
@@ -305,17 +243,32 @@ class PosePainter extends CustomPainter {
         fontSize: 18,
       ),
     );
-
     final textPainter = TextPainter()
       ..text = textSpan
       ..textDirection = TextDirection.ltr
       ..textAlign = TextAlign.center
       ..layout();
-
     final xCenter = (centerX - textPainter.width / 2);
     final yCenter = (centerY - textPainter.height / 2);
-    final offset = Offset(xCenter, yCenter);
+    textPainter.paint(canvas, Offset(xCenter, yCenter));
+  }
 
-    textPainter.paint(canvas, offset);
+  // New: Method to draw text in green
+  void drawTextInGreen(Canvas canvas, double centerX, double centerY, String text) {
+    final textSpan = TextSpan(
+      text: text,
+      style: const TextStyle(
+        color: Colors.green,
+        fontSize: 18,
+      ),
+    );
+    final textPainter = TextPainter()
+      ..text = textSpan
+      ..textDirection = TextDirection.ltr
+      ..textAlign = TextAlign.center
+      ..layout();
+    final xCenter = (centerX - textPainter.width / 2);
+    final yCenter = (centerY - textPainter.height / 2);
+    textPainter.paint(canvas, Offset(xCenter, yCenter));
   }
 }

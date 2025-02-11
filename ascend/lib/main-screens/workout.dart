@@ -3,6 +3,7 @@ import 'package:ascend/start-screen/splashHomeScreen.dart';
 import 'package:ascend/workouts/bulk.dart';
 import 'package:ascend/workouts/cut.dart';
 import 'package:ascend/workouts/fit.dart';
+import 'package:ascend/workouts/random_exercises/crunch.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 
@@ -18,7 +19,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   final List<String> _exercises = [
     'Push-ups',
     'Squats',
-    'Deadlifts',
+    'Crunches',
     'Plank',
     'Burpees',
   ];
@@ -191,7 +192,7 @@ class ExerciseCardWithImage extends StatelessWidget {
       case 'Squats':
         imagePath = 'assets/images/squats.jpg';
         break;
-      case 'Deadlifts':
+      case 'Crunches':
         imagePath = 'assets/images/deadlifts.png';
         break;
       case 'Plank':
@@ -220,9 +221,11 @@ class ExerciseCardWithImage extends StatelessWidget {
               MaterialPageRoute(builder: (context) => SquatPage()),
             );
             break;
-          case 'Deadlifts':
-            // Add Deadlifts page navigation
-            break;
+          case 'Crunches':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) =>  CrunchPage()),
+            );            break;
           case 'Plank':
             // Add Plank page navigation
             break;
