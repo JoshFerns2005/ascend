@@ -39,7 +39,7 @@ class _PushUpPageState extends State<PushUpPage> {
           children: [
             Expanded(
               child: PoseDetectorView(
-                onImage: (inputImage) async {
+                onImage: (InputImage inputImage, InputImageRotation rotation) async {
                   if (inputImage == null) {
                     print("Input image is null. Skipping pose detection.");
                     return;

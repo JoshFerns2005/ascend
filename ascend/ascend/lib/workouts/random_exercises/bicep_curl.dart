@@ -3,12 +3,12 @@ import 'package:ascend/pose_detect/pose_detector_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
-class SquatPage extends StatefulWidget {
+class BicepCurlPage extends StatefulWidget {
   @override
-  _SquatPageState createState() => _SquatPageState();
+  _BicepCurlPageState createState() => _BicepCurlPageState();
 }
 
-class _SquatPageState extends State<SquatPage> {
+class _BicepCurlPageState extends State<BicepCurlPage> {
   final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
 
   @override
@@ -20,14 +20,14 @@ class _SquatPageState extends State<SquatPage> {
   @override
   void initState() {
     super.initState();
-    PosePainter.nowPose = NowPoses.squat; // Set the current pose to squat
+    PosePainter.nowPose = NowPoses.bicepCurl; // Set the current pose to bicep curl
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Squat Pose Detector'),
+        title: Text('Bicep Curl Pose Detector'),
         centerTitle: true,
         elevation: 0,
       ),

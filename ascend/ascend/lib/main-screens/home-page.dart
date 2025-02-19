@@ -1,22 +1,22 @@
+import 'package:ascend/workouts/dailyworkout.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ascend/navbar.dart'; // Import BottomNavBar
-import 'home-screen.dart';
 
 class HomePage extends StatelessWidget {
-  final String username; // Declare a final variable for the username
-  HomePage({required this.username}); // Constructor to accept username
+  final String username;
 
-  final supabase = Supabase.instance.client; // Initialize Supabase client
+  HomePage({required this.username});
+
+  final supabase = Supabase.instance.client;
   final PageController _pageController = PageController();
 
   // Dummy data for game character and motivational quote
   final String gameCharacter = 'Your Game Character';
-  final String motivationalQuote =
-      '“Keep going. You’re getting better every day!”';
+  final String motivationalQuote = '“Keep going. You’re getting better every day!”';
 
+  // Fetch user schedule from Supabase or a dummy API
   Future<List<Map<String, dynamic>>> fetchUserSchedule(String userId) async {
     try {
       final response = await supabase
@@ -35,13 +35,8 @@ class HomePage extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Retrieve the user session to get userId
-    final user = supabase.auth.currentUser;
-    final userId = user?.id ?? ''; // Get userId from Supabase session
-
-    // Define the desired order of days
+  // Helper function to order the schedule by day
+  List<Map<String, dynamic>> _getOrderedSchedule(List<Map<String, dynamic>> schedule) {
     final dayOrder = [
       'Monday',
       'Tuesday',
@@ -51,6 +46,23 @@ class HomePage extends StatelessWidget {
       'Saturday',
       'Sunday'
     ];
+
+    return dayOrder.map((day) {
+      return schedule.firstWhere(
+        (item) => item['day_of_week'] == day,
+        orElse: () => {'exercises': []},
+      );
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Retrieve the user session to get userId
+    final user = supabase.auth.currentUser;
+    final userId = user?.id ?? ''; // Get userId from Supabase session
+
+    // Determine today's day
+    final today = DateFormat('EEEE').format(DateTime.now());
 
     return Scaffold(
       backgroundColor: Color.fromARGB(200, 0, 43, 79),
@@ -99,20 +111,12 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                         );
-                      } else if (snapshot.hasData &&
-                          snapshot.data!.isNotEmpty) {
+                      } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                         final schedule = snapshot.data!;
-                        final today = DateFormat('EEEE').format(DateTime.now());
-                        final orderedSchedule = dayOrder.map((day) {
-                          return schedule.firstWhere(
-                            (item) => item['day_of_week'] == day,
-                            orElse: () =>
-                                {'exercises': 'No exercises scheduled'},
-                          );
-                        }).toList();
+                        final orderedSchedule = _getOrderedSchedule(schedule);
 
                         return Container(
-                          height: MediaQuery.of(context).size.height * 0.35 , // Provide a fixed height to PageView
+                          height: MediaQuery.of(context).size.height * 0.35,
                           child: PageView(
                             controller: _pageController,
                             children: [
@@ -121,26 +125,35 @@ class HomePage extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: orderedSchedule.map((item) {
                                   final isToday = item['day_of_week'] == today;
+
+                                  // Convert exercises to a readable string
+                                  String exercisesString = '';
+                                  if (item['exercises'] is List) {
+                                    exercisesString = (item['exercises'] as List)
+                                        .map((exercise) => exercise['exercise'] ?? 'Unknown')
+                                        .join(', ');
+                                  } else {
+                                    exercisesString = 'No exercises scheduled';
+                                  }
+
                                   return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0),
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
                                     child: Text.rich(
                                       TextSpan(
                                         text: '${item['day_of_week']}: ',
                                         style: TextStyle(
-                                          fontWeight: isToday
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
+                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                                           color: Colors.white,
                                           fontSize: 18,
                                         ),
                                         children: [
                                           TextSpan(
-                                            text: item['exercises'],
+                                            text: exercisesString.isEmpty
+                                                ? 'No exercises scheduled'
+                                                : exercisesString,
                                             style: TextStyle(
                                               fontWeight: FontWeight.normal,
-                                              color:
-                                                  Colors.white.withOpacity(0.9),
+                                              color: Colors.white.withOpacity(0.9),
                                               fontSize: 16,
                                             ),
                                           ),
@@ -194,21 +207,7 @@ class HomePage extends StatelessWidget {
             ),
 
             SizedBox(height: 20),
-            // Section: User Statistics
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatCard('Workouts', '0 this week',
-                      Icons.fitness_center, Colors.white),
-                  _buildStatCard('Calories', '0 kcal',
-                      Icons.local_fire_department, Colors.white),
-                  _buildStatCard('Points', '0 pts', Icons.star, Colors.white),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
+
             // Quick Actions Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -235,7 +234,10 @@ class HomePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => WorkoutSchedulePage()),
+                              builder: (context) => DailyWorkoutPage(
+                                dailyExercises: [],
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -247,7 +249,8 @@ class HomePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => WorkoutSchedulePage()),
+                              builder: (context) => WorkoutSchedulePage(),
+                            ),
                           );
                         },
                       ),
@@ -256,7 +259,9 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
+
             SizedBox(height: 20),
+
             // Section: Recommendations
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -272,10 +277,8 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 10),
-                  _buildRecommendationCard(
-                      'Full Body HIIT', 'Burn 400 kcal in 20 minutes!'),
-                  _buildRecommendationCard(
-                      'Morning Yoga', 'Improve flexibility and relax.'),
+                  _buildRecommendationCard('Full Body HIIT', 'Burn 400 kcal in 20 minutes!'),
+                  _buildRecommendationCard('Morning Yoga', 'Improve flexibility and relax.'),
                 ],
               ),
             ),
@@ -285,11 +288,10 @@ class HomePage extends StatelessWidget {
     );
   }
 
-// Function to build individual statistic cards
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
+  // Function to build individual statistic cards
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return SizedBox(
-      width: 120, // Set a fixed width to ensure symmetry
+      width: 120,
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 5),
         padding: EdgeInsets.all(15),
@@ -303,21 +305,13 @@ class HomePage extends StatelessWidget {
             SizedBox(height: 10),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
-              textAlign:
-                  TextAlign.center, // Center-align the text for consistency
+              style: TextStyle(fontSize: 14, color: Colors.white),
+              textAlign: TextAlign.center,
             ),
-            SizedBox(height: 5), // Add spacing between title and value
+            SizedBox(height: 5),
             Text(
               value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
               textAlign: TextAlign.center,
             ),
           ],
@@ -328,10 +322,14 @@ class HomePage extends StatelessWidget {
 
   // Function to build quick action cards
   Widget _buildQuickActionCard(
-      String title, IconData icon, Color color, VoidCallback onTapAction) {
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTapAction,
+  ) {
     return Expanded(
       child: GestureDetector(
-        onTap: onTapAction, // Call the function passed as a parameter
+        onTap: onTapAction,
         child: Container(
           margin: EdgeInsets.symmetric(horizontal: 5),
           padding: EdgeInsets.all(15),
@@ -345,11 +343,7 @@ class HomePage extends StatelessWidget {
               SizedBox(height: 10),
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -368,7 +362,7 @@ class HomePage extends StatelessWidget {
       child: ListTile(
         leading: Icon(Icons.recommend, color: Colors.white),
         title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        subtitle: Text(subtitle,style: TextStyle(color: Colors.white)),
+        subtitle: Text(subtitle, style: TextStyle(color: Colors.white)),
         trailing: Icon(Icons.arrow_forward, color: Colors.white),
         onTap: () {
           // Add functionality for recommendation click

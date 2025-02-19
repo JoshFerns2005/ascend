@@ -8,7 +8,6 @@ class WorkoutSchedulePage extends StatefulWidget {
 
 class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   final supabase = Supabase.instance.client; // Supabase client instance
-
   final List<String> days = [
     'Monday',
     'Tuesday',
@@ -32,8 +31,9 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
     'Rest',
   ]; // Predefined exercises list
 
-  Map<String, List<String>> workoutSchedule =
-      {}; // Store exercises for each day
+  Map<String, List<Map<String, dynamic>>> workoutSchedule =
+      {}; // Store exercises with sets, reps, or time limit for each day
+
   String? userId; // Variable to store the current user's ID
 
   @override
@@ -64,16 +64,14 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         print('No user logged in'); // Handle the null case explicitly
         return;
       }
-
       final response = await supabase
           .from('workout_schedule')
           .select('day_of_week, exercises')
           .eq('user_id', userId!); // Use the current user's ID
-
       if (response.isNotEmpty) {
         for (var item in response) {
           final day = item['day_of_week'];
-          final exercises = item['exercises'].split(',').toList();
+          final exercises = List<Map<String, dynamic>>.from(item['exercises']);
           workoutSchedule[day] = exercises;
         }
       }
@@ -84,13 +82,18 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   }
 
   // Update the selected exercises for a specific day
-  void updateSelectedExercises(String exercise, bool isSelected) {
+  void updateSelectedExercises(String exercise, bool isSelected, {int sets = 0, int reps = 0, int timeLimit = 0}) {
     setState(() {
       workoutSchedule[selectedDay] ??= [];
       if (isSelected) {
-        workoutSchedule[selectedDay]!.add(exercise);
+        workoutSchedule[selectedDay]!.add({
+          'exercise': exercise,
+          'sets': sets,
+          'reps': reps,
+          'time_limit': timeLimit,
+        });
       } else {
-        workoutSchedule[selectedDay]!.remove(exercise);
+        workoutSchedule[selectedDay]!.removeWhere((item) => item['exercise'] == exercise);
       }
     });
   }
@@ -102,11 +105,9 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         print('No user logged in');
         return;
       }
-
       // Iterate through the workout schedule map
       for (var day in workoutSchedule.keys) {
-        final exercises = workoutSchedule[day]!.join(',');
-
+        final exercises = workoutSchedule[day]!;
         // Check if a schedule already exists for this user and day
         final existingSchedule = await supabase
             .from('workout_schedule')
@@ -114,7 +115,6 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
             .eq('user_id', userId!) // userId is now non-null
             .eq('day_of_week', day)
             .maybeSingle();
-
         if (existingSchedule != null) {
           // If schedule exists, update it
           await supabase
@@ -131,7 +131,6 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
           });
         }
       }
-
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Workout schedule saved successfully!')),
@@ -148,8 +147,10 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Workout Schedule',
-        style: TextStyle(color: Colors.white),),
+        title: Text(
+          'Workout Schedule',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Color.fromARGB(255, 0, 43, 79),
         automaticallyImplyLeading: false,
       ),
@@ -157,8 +158,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         children: [
           // Left-hand side: Days of the week
           Container(
-            width:
-                MediaQuery.of(context).size.width * 0.4, // 40% of screen width
+            width: MediaQuery.of(context).size.width * 0.4, // 40% of screen width
             color: Color.fromARGB(255, 240, 240, 240),
             child: ListView.builder(
               itemCount: days.length,
@@ -168,9 +168,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                   title: Text(
                     day,
                     style: TextStyle(
-                      fontWeight: selectedDay == day
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                      fontWeight: selectedDay == day ? FontWeight.bold : FontWeight.normal,
                       color: selectedDay == day ? Colors.blue : Colors.black,
                     ),
                   ),
@@ -183,7 +181,6 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
               },
             ),
           ),
-
           // Right-hand side: Exercise selection
           Expanded(
             child: Padding(
@@ -202,14 +199,47 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                       itemBuilder: (context, index) {
                         final exercise = exercises[index];
                         // Dynamically set the checkbox state based on the schedule
-                        final isSelected =
-                            workoutSchedule[selectedDay]?.contains(exercise) ?? false;
-                        return CheckboxListTile(
+                        final isSelected = workoutSchedule[selectedDay]
+                                ?.any((item) => item['exercise'] == exercise) ??
+                            false;
+
+                        return ExpansionTile(
                           title: Text(exercise),
-                          value: isSelected,
-                          onChanged: (bool? value) {
-                            updateSelectedExercises(exercise, value ?? false);
-                          },
+                          leading: Checkbox(
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              if (value == true) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => _ExerciseDetailsDialog(
+                                    exercise: exercise,
+                                    onSave: (sets, reps, timeLimit) {
+                                      updateSelectedExercises(
+                                        exercise,
+                                        true,
+                                        sets: sets,
+                                        reps: reps,
+                                        timeLimit: timeLimit,
+                                      );
+                                    },
+                                  ),
+                                );
+                              } else {
+                                updateSelectedExercises(exercise, false);
+                              }
+                            },
+                          ),
+                          children: workoutSchedule[selectedDay]
+                                  ?.where((item) => item['exercise'] == exercise)
+                                  .map((item) => ListTile(
+                                        title: Text(
+                                          exercise == 'Plank'
+                                              ? 'Time Limit: ${item['time_limit']} seconds'
+                                              : 'Sets: ${item['sets']}, Reps: ${item['reps']}',
+                                        ),
+                                      ))
+                                  .toList() ??
+                              [],
                         );
                       },
                     ),
@@ -224,8 +254,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
                         backgroundColor: Color.fromARGB(255, 0, 43, 79),
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                       ),
                     ),
                   ),
@@ -235,6 +264,67 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Dialog to input sets, reps, or time limit
+class _ExerciseDetailsDialog extends StatelessWidget {
+  final String exercise;
+  final Function(int sets, int reps, int timeLimit) onSave;
+
+  _ExerciseDetailsDialog({required this.exercise, required this.onSave});
+
+  final TextEditingController setsController = TextEditingController();
+  final TextEditingController repsController = TextEditingController();
+  final TextEditingController timeLimitController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Enter Details for $exercise'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+           if (exercise != 'Plank' && exercise != 'Rest') ...[
+            TextField(
+              controller: setsController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Sets'),
+            ),
+            TextField(
+              controller: repsController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Reps'),
+            ),
+          ] else if (exercise == 'Plank') ...[
+            TextField(
+              controller: timeLimitController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Time Limit (seconds)'),
+            ),
+          ],
+          // No input fields for "Rest"
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            final sets = int.tryParse(setsController.text) ?? 0;
+            final reps = int.tryParse(repsController.text) ?? 0;
+            final timeLimit = int.tryParse(timeLimitController.text) ?? 0;
+            onSave(sets, reps, timeLimit);
+            Navigator.pop(context);
+          },
+          child: Text('Save'),
+        ),
+      ],
     );
   }
 }

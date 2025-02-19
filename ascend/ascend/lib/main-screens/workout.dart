@@ -3,12 +3,13 @@ import 'package:ascend/start-screen/splashHomeScreen.dart';
 import 'package:ascend/workouts/bulk.dart';
 import 'package:ascend/workouts/cut.dart';
 import 'package:ascend/workouts/fit.dart';
+import 'package:ascend/workouts/random_exercises/bicep_curl.dart';
 import 'package:ascend/workouts/random_exercises/crunch.dart';
+import 'package:ascend/workouts/random_exercises/plank.dart';
+import 'package:ascend/workouts/random_exercises/pushup.dart';
+import 'package:ascend/workouts/random_exercises/squat.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
-
-import '../workouts/random_exercises/pushup.dart';
-import '../workouts/random_exercises/squat.dart';
 
 class WorkoutPage extends StatefulWidget {
   @override
@@ -21,7 +22,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     'Squats',
     'Crunches',
     'Plank',
-    'Burpees',
+    'Bicep-Curls',
   ];
 
   final Map<String, List<String>> _workouts = {
@@ -66,8 +67,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   itemBuilder: (context, index) {
                     String category = _workouts.keys.elementAt(index);
                     return GestureDetector(
-                      onTap: () =>
-                          _navigateToWorkoutCategory(context, category),
+                      onTap: () => _navigateToWorkoutCategory(context, category),
                       child: WorkoutCategoryCard(category: category),
                     );
                   },
@@ -193,16 +193,16 @@ class ExerciseCardWithImage extends StatelessWidget {
         imagePath = 'assets/images/squats.jpg';
         break;
       case 'Crunches':
-        imagePath = 'assets/images/deadlifts.png';
+        imagePath = 'assets/images/Crunches.jpg';
         break;
       case 'Plank':
         imagePath = 'assets/images/planks.png';
         break;
-      case 'Burpees':
-        imagePath = 'assets/images/burpees.jpg';
+      case 'Bicep-Curls':
+        imagePath = 'assets/images/Bicep.jpg';
         break;
       default:
-        imagePath = 'assets/images/default.png';
+        imagePath = 'assets/images/default.jpg';
     }
 
     return GestureDetector(
@@ -224,13 +224,20 @@ class ExerciseCardWithImage extends StatelessWidget {
           case 'Crunches':
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) =>  CrunchPage()),
-            );            break;
-          case 'Plank':
-            // Add Plank page navigation
+              MaterialPageRoute(builder: (context) => CrunchPage()),
+            );
             break;
-          case 'Burpees':
-            // Add Burpees page navigation
+          case 'Plank':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PlankPage()),
+            );
+            break;
+          case 'Bicep-Curls':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => BicepCurlPage()),
+            );
             break;
           default:
             ScaffoldMessenger.of(context).showSnackBar(
@@ -293,8 +300,7 @@ class WorkoutCategoryCard extends StatelessWidget {
     return Column(
       children: [
         Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           margin: EdgeInsets.symmetric(horizontal: 8),
           elevation: 3,
           child: ClipRRect(
