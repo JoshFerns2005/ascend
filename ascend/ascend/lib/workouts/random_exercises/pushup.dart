@@ -1,64 +1,115 @@
 import 'package:ascend/pose_detect/painters/pose_painter.dart';
 import 'package:ascend/pose_detect/pose_detector_view.dart';
+import 'package:ascend/workouts/dailyworkout.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class PushUpPage extends StatefulWidget {
-  @override
-  _PushUpPageState createState() => _PushUpPageState();
-}
+class PushUpPage extends StatelessWidget {
+  final String exerciseName = "Push Ups"; // Name of the exercise
 
-class _PushUpPageState extends State<PushUpPage> {
-  final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
-
-  @override
-  void dispose() async {
-    await _poseDetector.close();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    PosePainter.nowPose = NowPoses.pushup; // Set the current pose to push-up
-  }
 
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final userId = user?.id ?? '';
+
+    // Determine today's day
+    final today = DateFormat('EEEE').format(DateTime.now());
     return Scaffold(
       appBar: AppBar(
         title: Text('Push-Up Pose Detector'),
         centerTitle: true,
         elevation: 0,
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: PoseDetectorView(
-                onImage: (InputImage inputImage, InputImageRotation rotation) async {
-                  if (inputImage == null) {
-                    print("Input image is null. Skipping pose detection.");
-                    return;
-                  }
-                  try {
-                    final poses = await _poseDetector.processImage(inputImage);
-                    if (poses.isNotEmpty) {
-                      // No need to calculate angles here; PosePainter handles it
-                    }
-                  } catch (e) {
-                    print("Error processing image: $e");
-                  }
-                },
+       body: FutureBuilder<Map<String, dynamic>?>(
+        future: _fetchExerciseDetails(userId, exerciseName, today),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error loading exercise details',
+                style: TextStyle(fontSize: 18, color: Colors.red),
               ),
-            ),
-            SizedBox(height: 20),
-          ],
-        ),
+            );
+          } else if (snapshot.hasData && snapshot.data != null) {
+            final exerciseDetails = snapshot.data!;
+            final sets = exerciseDetails['sets'] ?? 3; // Default to 3 sets
+            final reps = exerciseDetails['reps'] ?? 20; // Default to 20 reps
+
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: PoseDetectorView(
+                      exerciseName: exerciseName, // Pass the exercise name
+                      sets: sets, // Dynamically fetched sets
+                      reps: reps, // Dynamically fetched reps
+                      onExerciseCompleted: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+            );
+          } else {
+            return Center(
+              child: Text(
+                'No exercise details found for today',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+              ),
+            );
+          }
+        },
       ),
     );
+  }
+
+  // Fetch exercise details from Supabase for the current day
+  Future<Map<String, dynamic>?> _fetchExerciseDetails(String userId, String exerciseName, String today) async {
+    try {
+      // Fetch the workout schedule for the user
+      final response = await Supabase.instance.client
+          .from('workout_schedule')
+          .select('day_of_week, exercises')
+          .eq('user_id', userId)
+          .eq('day_of_week', today);
+
+      // Print the entire response for debugging
+      print('Fetched response from Supabase: $response');
+
+      if (response != null && response.isNotEmpty) {
+        // Extract the exercises for today
+        final todaysSchedule = response.first;
+        final List<dynamic> exercises = todaysSchedule['exercises'];
+
+        // Print the exercises for today
+        print('Exercises for today ($today): $exercises');
+
+        // Find the specific exercise by name
+        final exercise = exercises.firstWhere(
+          (exercise) => exercise['exercise'] == exerciseName,
+          orElse: () => null,
+        );
+
+        // Print the found exercise for debugging
+        print('Found exercise "$exerciseName": $exercise');
+
+        return exercise as Map<String, dynamic>?;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching exercise details: $e');
+      return null;
+    }
   }
 }

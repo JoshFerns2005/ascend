@@ -1,27 +1,11 @@
 import 'package:ascend/pose_detect/painters/pose_painter.dart';
 import 'package:ascend/pose_detect/pose_detector_view.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
-class PlankPage extends StatefulWidget {
-  @override
-  _PlankPageState createState() => _PlankPageState();
-}
-
-class _PlankPageState extends State<PlankPage> {
-  final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions());
-
-  @override
-  void dispose() async {
-    await _poseDetector.close();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    PosePainter.nowPose = NowPoses.plank; // Set the current pose to plank
-  }
+class PlankPage extends StatelessWidget {
+  final String exerciseName = "plank"; // Name of the exercise
+  final int sets = 3; // Total sets for the exercise
+  final int reps = 1; // Reps per set (for plank, this can represent duration)
 
   @override
   Widget build(BuildContext context) {
@@ -39,20 +23,12 @@ class _PlankPageState extends State<PlankPage> {
           children: [
             Expanded(
               child: PoseDetectorView(
-                onImage: (InputImage inputImage, InputImageRotation rotation) async {
-                  if (inputImage == null) {
-                    print("Input image is null. Skipping pose detection.");
-                    return;
-                  }
-                  try {
-                    final poses = await _poseDetector.processImage(inputImage);
-                    if (poses.isNotEmpty) {
-                      // No need to calculate angles here; PosePainter handles it
-                    }
-                  } catch (e) {
-                    print("Error processing image: $e");
-                  }
-                },
+                exerciseName: exerciseName, // Pass the exercise name
+                sets: sets, // Pass the total sets
+                reps: reps,
+                onExerciseCompleted: () {
+                  Navigator.pop(context);
+                }, // Pass the reps/duration
               ),
             ),
             SizedBox(height: 20),

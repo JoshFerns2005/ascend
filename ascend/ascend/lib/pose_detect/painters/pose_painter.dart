@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
@@ -14,12 +13,26 @@ class PosePainter extends CustomPainter {
     this.imageSize,
     this.rotation,
     this.cameraLensDirection,
+    this.exerciseName, // Add this parameter
+    this.sets, // Add this parameter
+    this.reps, // Add this parameter
+    this.completedReps, // Pass completed reps from parent widget
+    this.completedSets,
+    this.onRepCompleted, // Callback for rep completion
+    this.onExerciseCompleted,
   );
 
   final List poses;
   final Size imageSize;
   final InputImageRotation rotation;
   final CameraLensDirection cameraLensDirection;
+  final String exerciseName; // Name of the current exercise
+  final int sets; // Total sets for the exercise
+  final int reps; // Reps per set
+  final VoidCallback onRepCompleted; // Callback to notify parent widget
+  final int completedReps; // Completed reps passed from parent
+  final VoidCallback onExerciseCompleted; // Callback for navigation
+  final int completedSets;
 
   static NowPoses nowPose = NowPoses.pushup; // Default to pushups
 
@@ -45,60 +58,53 @@ class PosePainter extends CustomPainter {
   static int plankCounter = 0; // Counter for planks
   static bool hasStartedPlank = false; // Flag to track plank start
 
-  // Angle thresholds for push-ups
-  final double shoulderTopMin = 20.0;
-  final double shoulderTopMax = 80.0;
-  final double shoulderBottomMin = 0.0;
-  final double shoulderBottomMax = 30.0;
-  final double elbowTopMin = 140.0;
-  final double elbowTopMax = 170.0;
-  final double elbowBottomMin = 60.0;
-  final double elbowBottomMax = 90.0;
-  final double kneeTopMin = 165.0;
-  final double kneeTopMax = 185.0;
-  final double kneeBottomMin = 170.0;
-  final double kneeBottomMax = 185.0;
+  static int currentSet = 0; // Track the current set
 
-  // Angle thresholds for squats
-  final double hipBottomMin = 70.0;
-  final double hipBottomMax = 110.0;
-  final double hipTopMin = 160.0;
-  final double hipTopMax = 180.0;
-  final double kneeSquatBottomMin = 70.0;
-  final double kneeSquatBottomMax = 110.0;
-  final double kneeSquatTopMin = 160.0;
-  final double kneeSquatTopMax = 180.0;
+  // Method to dynamically determine the current pose
+  static NowPoses getPoseFromName(String exerciseName) {
+    switch (exerciseName) {
+      case 'Push Ups':
+        return NowPoses.pushup;
+      case 'Squats':
+        return NowPoses.squat;
+      case 'Crunches':
+        return NowPoses.crunch;
+      case 'Bicep Curls':
+        return NowPoses.bicepCurl;
+      case 'Plank':
+        return NowPoses.plank;
+      default:
+        return NowPoses.pushup; // Default to push-ups
+    }
+  }
 
-// Angle thresholds for crunches
-  final double hipCrunchBottomMin = 140.0; // Bottom position (lying down)
-  final double hipCrunchBottomMax = 170.0;
-  final double hipCrunchTopMin = 50.0; // Top position (sitting up)
-  final double hipCrunchTopMax = 80.0;
-  final double kneeCrunchBottomMin = 60.0;
-  final double kneeCrunchBottomMax = 90.0;
-  final double kneeCrunchTopMin = 60.0;
-  final double kneeCrunchTopMax = 90.0;
+  // Reset counters when starting a new exercise
+  void resetCounters() {
+    pushUpCounter = 0;
+    hasGoneDownPushUp = false;
 
-  // Angle thresholds for bicep curls
-  final double elbowBicepCurlBottomMin = 10.0;
-  final double elbowBicepCurlBottomMax = 20.0;
-  final double elbowBicepCurlTopMin = 140.0;
-  final double elbowBicepCurlTopMax = 170.0;
-  final double shoulderBicepCurlMin = 0.0;
-  final double shoulderBicepCurlMax = 30.0;
+    squatCounter = 0;
+    hasGoneDownSquat = false;
 
-  // Angle thresholds for planks
-  final double hipPlankMin = 150.0;
-  final double hipPlankMax = 180.0;
-  final double shoulderPlankMin = 50.0;
-  final double shoulderPlankMax = 90.0;
-  final double kneePlankMin = 150.0;
-  final double kneePlankMax = 180.0;
-  // Timer for plank
-  static Timer? _plankTimer; // Timer instance
-  static bool _isPlankActive = false; // Flag to track if plank is active
+    crunchCounter = 0;
+    hasGoneDownCrunch = false;
+
+    rightBicepCurlCounter = 0;
+    hasGoneDownRightBicepCurl = false;
+
+    leftBicepCurlCounter = 0;
+    hasGoneDownLeftBicepCurl = false;
+
+    plankCounter = 0;
+    hasStartedPlank = false;
+
+    currentSet = 0;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
+    nowPose = getPoseFromName(exerciseName); // Dynamically set the pose
+
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
@@ -137,7 +143,6 @@ class PosePainter extends CustomPainter {
       double leftShoulderAngleValue =
           double.tryParse(leftShoulderAngle ?? '') ?? 0.0;
       double leftElbowAngleValue = double.tryParse(leftElbowAngle ?? '') ?? 0.0;
-      // Print debug information
 
       // Detect position and update state based on current pose
       if (nowPose == NowPoses.pushup) {
@@ -254,22 +259,28 @@ class PosePainter extends CustomPainter {
       if (nowPose == NowPoses.pushup) {
         paintText(PoseLandmarkType.rightShoulder);
         paintText(PoseLandmarkType.rightElbow);
-        drawText(canvas, 80, 50, 'Push-Ups: $pushUpCounter');
+        drawText(canvas, 80, 50, 'Push-Ups: $pushUpCounter / $reps');
+        drawText(canvas, 80, 70, 'Sets: $currentSet / $sets');
       } else if (nowPose == NowPoses.squat) {
         paintText(PoseLandmarkType.rightHip);
         paintText(PoseLandmarkType.rightKnee);
-        drawText(canvas, 80, 50, 'Squats: $squatCounter');
+        drawText(canvas, 80, 50, 'Squats: $squatCounter / $reps');
+        drawText(canvas, 80, 70, 'Sets: $currentSet / $sets');
       } else if (nowPose == NowPoses.crunch) {
         paintText(PoseLandmarkType.rightHip);
         paintText(PoseLandmarkType.rightKnee);
-        drawText(canvas, 80, 50, 'Crunches: $crunchCounter');
+        drawText(canvas, 80, 50, 'Crunches: $crunchCounter / $reps');
+        drawText(canvas, 80, 70, 'Sets: $currentSet / $sets');
       } else if (nowPose == NowPoses.bicepCurl) {
         paintText(PoseLandmarkType.rightElbow);
         paintText(PoseLandmarkType.rightShoulder);
         paintText(PoseLandmarkType.leftElbow);
         paintText(PoseLandmarkType.leftShoulder);
-        drawText(canvas, 80, 50, 'Right Bicep Curls: $rightBicepCurlCounter');
-        drawText(canvas, 80, 70, 'Left Bicep Curls: $leftBicepCurlCounter');
+        drawText(canvas, 80, 50,
+            'Right Bicep Curls: $rightBicepCurlCounter / $reps');
+        drawText(
+            canvas, 80, 70, 'Left Bicep Curls: $leftBicepCurlCounter / $reps');
+        drawText(canvas, 80, 100, 'Sets: $currentSet / $sets');
       } else if (nowPose == NowPoses.plank) {
         paintText(PoseLandmarkType.rightHip);
         paintText(PoseLandmarkType.rightShoulder);
@@ -278,7 +289,7 @@ class PosePainter extends CustomPainter {
       }
 
       // Feedback text
-      drawText(canvas, 80, 80, 'In Progress...');
+      drawText(canvas, 80, 30, 'In Progress...');
     }
   }
 
@@ -289,10 +300,26 @@ class PosePainter extends CustomPainter {
         print('User has gone to the bottom position for push-ups.');
       }
     } else if (isAtTopPositionPushUp(shoulderAngle, elbowAngle, kneeAngle)) {
-      if (hasGoneDownPushUp) {
+      if (hasGoneDownPushUp && pushUpCounter < reps) {
         pushUpCounter++;
         hasGoneDownPushUp = false;
         print('User has completed a push-up. Push-Ups: $pushUpCounter');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onRepCompleted();
+        });
+        // Check if all reps are completed
+        if (pushUpCounter == reps) {
+          print('Set $currentSet completed.');
+          currentSet++; // Move to the next set
+          pushUpCounter = 0; // Reset rep counter for the new set
+
+          // Check if all sets are completed
+          if (currentSet == sets) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onExerciseCompleted(); // Navigate back to DailyWorkoutPage
+            });
+          }
+        }
       }
     }
   }
@@ -304,10 +331,26 @@ class PosePainter extends CustomPainter {
         print('User has gone to the bottom position for squats.');
       }
     } else if (isAtTopPositionSquat(hipAngle, kneeAngle)) {
-      if (hasGoneDownSquat) {
+      if (hasGoneDownSquat && squatCounter < reps) {
         squatCounter++;
         hasGoneDownSquat = false;
         print('User has completed a squat. Squats: $squatCounter');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onRepCompleted();
+        });
+        // Check if all reps are completed
+        if (squatCounter == reps) {
+          print('Set $currentSet completed.');
+          currentSet++; // Move to the next set
+          squatCounter = 0; // Reset rep counter for the new set
+
+          // Check if all sets are completed
+          if (currentSet == sets) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onExerciseCompleted(); // Navigate back to DailyWorkoutPage
+            });
+          }
+        }
       }
     }
   }
@@ -315,14 +358,31 @@ class PosePainter extends CustomPainter {
   void handleCrunch(double hipAngle, double kneeAngle) {
     if (isAtBottomPositionCrunch(hipAngle, kneeAngle)) {
       if (!hasGoneDownCrunch) {
-        hasGoneDownCrunch = true; // User has gone to the bottom position
+        hasGoneDownCrunch = true;
         print('User has gone to the bottom position for crunches.');
       }
     } else if (isAtTopPositionCrunch(hipAngle, kneeAngle)) {
-      if (hasGoneDownCrunch) {
-        crunchCounter++; // Increment the crunch counter
-        hasGoneDownCrunch = false; // Reset the flag
-        print('User has completed a crunch. Crunches: $crunchCounter');
+      if (hasGoneDownCrunch && crunchCounter < reps) {
+        crunchCounter++;
+        hasGoneDownCrunch = false;
+        print('User has completed a crunch. Crunches: $crunchCounter / $reps');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onRepCompleted();
+        });
+
+        // Check if all reps for the current set are completed
+        if (crunchCounter == reps) {
+          print('Set $currentSet completed.');
+          currentSet++; // Move to the next set
+          crunchCounter = 0; // Reset rep counter for the new set
+
+          // Check if all sets are completed
+          if (currentSet == sets) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onExerciseCompleted(); // Navigate back to DailyWorkoutPage
+            });
+          }
+        }
       }
     }
   }
@@ -334,16 +394,30 @@ class PosePainter extends CustomPainter {
         print('User has gone to the bottom position for right bicep curls.');
       }
     } else if (isAtTopPositionBicepCurl(elbowAngle, shoulderAngle)) {
-      if (hasGoneDownRightBicepCurl) {
+      if (hasGoneDownRightBicepCurl && rightBicepCurlCounter < reps) {
         rightBicepCurlCounter++;
         hasGoneDownRightBicepCurl = false;
         print(
             'User has completed a right bicep curl. Right Bicep Curls: $rightBicepCurlCounter');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onRepCompleted();
+        });
+        if (leftBicepCurlCounter == reps && rightBicepCurlCounter == reps) {
+          print('Set $currentSet completed.');
+          currentSet++; // Move to the next set
+          rightBicepCurlCounter = 0; // Reset rep counter for the new set
+
+          // Check if all sets are completed
+          if (currentSet == sets) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onExerciseCompleted(); // Navigate back to DailyWorkoutPage
+            });
+          }
+        }
       }
     }
   }
 
-// Handle left bicep curls
   void handleLeftBicepCurl(double elbowAngle, double shoulderAngle) {
     if (isAtBottomPositionBicepCurl(elbowAngle, shoulderAngle)) {
       if (!hasGoneDownLeftBicepCurl) {
@@ -351,130 +425,125 @@ class PosePainter extends CustomPainter {
         print('User has gone to the bottom position for left bicep curls.');
       }
     } else if (isAtTopPositionBicepCurl(elbowAngle, shoulderAngle)) {
-      if (hasGoneDownLeftBicepCurl) {
+      if (hasGoneDownLeftBicepCurl && leftBicepCurlCounter < reps) {
         leftBicepCurlCounter++;
         hasGoneDownLeftBicepCurl = false;
         print(
             'User has completed a left bicep curl. Left Bicep Curls: $leftBicepCurlCounter');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onRepCompleted();
+        });
+        if (leftBicepCurlCounter == reps && rightBicepCurlCounter == reps) {
+          print('Set $currentSet completed.');
+          currentSet++; // Move to the next set
+          leftBicepCurlCounter = 0; // Reset rep counter for the new set
+
+          // Check if all sets are completed
+          if (currentSet == sets) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onExerciseCompleted(); // Navigate back to DailyWorkoutPage
+            });
+          }
+        }
       }
     }
   }
 
   void handlePlank(double hipAngle, double shoulderAngle, double kneeAngle) {
-    // Check if the pose is within the plank thresholds
-    bool isInPlankPosition = hipAngle >= hipPlankMin &&
-        hipAngle <= hipPlankMax &&
-        shoulderAngle >= shoulderPlankMin &&
-        shoulderAngle <= shoulderPlankMax &&
-        kneeAngle >= kneePlankMin &&
-        kneeAngle <= kneePlankMax;
+    if (!hasStartedPlank &&
+        isAtPlankPosition(hipAngle, shoulderAngle, kneeAngle)) {
+      hasStartedPlank = true;
+      print('User has started the plank.');
+    }
+    if (hasStartedPlank) {
+      plankCounter++;
+      print('Plank time: ${plankCounter ~/ 30} seconds'); // Assuming 30 FPS
 
-    if (isInPlankPosition) {
-      // Start or continue the timer if the pose is valid
-      if (!_isPlankActive) {
-        _isPlankActive = true;
-        _startPlankTimer();
-      }
-    } else {
-      // Stop the timer if the pose is invalid
-      if (_isPlankActive) {
-        _isPlankActive = false;
-        _stopPlankTimer();
+      // Check if plank duration matches target reps
+      if ((plankCounter ~/ 30) >= reps) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onExerciseCompleted();
+        });
       }
     }
   }
 
-  void _startPlankTimer() {
-    // Start a new timer if one isn't already running
-    if (_plankTimer == null || !_plankTimer!.isActive) {
-      _plankTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-        plankCounter++; // Increment the plank counter every second
-        print('Plank Timer: $plankCounter seconds');
-      });
-    }
-  }
-
-  void _stopPlankTimer() {
-    // Stop and reset the timer
-    _plankTimer?.cancel(); // Cancel the timer
-    _plankTimer = null; // Clear the timer reference
-  }
-
+  // Helper methods to check positions
   bool isAtBottomPositionPushUp(
       double shoulderAngle, double elbowAngle, double kneeAngle) {
-    return shoulderAngle >= shoulderBottomMin &&
-        shoulderAngle <= shoulderBottomMax &&
-        elbowAngle >= elbowBottomMin &&
-        elbowAngle <= elbowBottomMax &&
-        kneeAngle >= kneeBottomMin &&
-        kneeAngle <= kneeBottomMax;
+    return shoulderAngle >= 0 &&
+        shoulderAngle <= 30 &&
+        elbowAngle >= 60 &&
+        elbowAngle <= 90 &&
+        kneeAngle >= 170 &&
+        kneeAngle <= 185;
   }
 
   bool isAtTopPositionPushUp(
       double shoulderAngle, double elbowAngle, double kneeAngle) {
-    return shoulderAngle >= shoulderTopMin &&
-        shoulderAngle <= shoulderTopMax &&
-        elbowAngle >= elbowTopMin &&
-        elbowAngle <= elbowTopMax &&
-        kneeAngle >= kneeTopMin &&
-        kneeAngle <= kneeTopMax;
+    return shoulderAngle >= 20 &&
+        shoulderAngle <= 80 &&
+        elbowAngle >= 140 &&
+        elbowAngle <= 170 &&
+        kneeAngle >= 165 &&
+        kneeAngle <= 185;
   }
 
   bool isAtBottomPositionSquat(double hipAngle, double kneeAngle) {
-    return hipAngle >= hipBottomMin &&
-        hipAngle <= hipBottomMax &&
-        kneeAngle >= kneeSquatBottomMin &&
-        kneeAngle <= kneeSquatBottomMax;
+    return hipAngle >= 70 &&
+        hipAngle <= 110 &&
+        kneeAngle >= 70 &&
+        kneeAngle <= 110;
   }
 
   bool isAtTopPositionSquat(double hipAngle, double kneeAngle) {
-    return hipAngle >= hipTopMin &&
-        hipAngle <= hipTopMax &&
-        kneeAngle >= kneeSquatTopMin &&
-        kneeAngle <= kneeSquatTopMax;
+    return hipAngle >= 160 &&
+        hipAngle <= 180 &&
+        kneeAngle >= 160 &&
+        kneeAngle <= 180;
   }
 
   bool isAtBottomPositionCrunch(double hipAngle, double kneeAngle) {
-    return kneeAngle >= kneeCrunchBottomMin &&
-        kneeAngle <= kneeCrunchBottomMax &&
-        hipAngle >= hipCrunchBottomMin &&
-        hipAngle <= hipCrunchBottomMax;
+    return hipAngle >= 140 &&
+        hipAngle <= 170 &&
+        kneeAngle >= 60 &&
+        kneeAngle <= 90;
   }
 
   bool isAtTopPositionCrunch(double hipAngle, double kneeAngle) {
-    return kneeAngle >= kneeCrunchTopMin &&
-        kneeAngle <= kneeCrunchTopMax &&
-        hipAngle >= hipCrunchTopMin &&
-        hipAngle <= hipCrunchTopMax;
+    return hipAngle >= 50 &&
+        hipAngle <= 80 &&
+        kneeAngle >= 60 &&
+        kneeAngle <= 90;
   }
 
   bool isAtBottomPositionBicepCurl(double elbowAngle, double shoulderAngle) {
-    return elbowAngle >= elbowBicepCurlBottomMin &&
-        elbowAngle <= elbowBicepCurlBottomMax &&
-        shoulderAngle >= shoulderBicepCurlMin &&
-        shoulderAngle <= shoulderBicepCurlMax;
+    return elbowAngle >= 10 &&
+        elbowAngle <= 20 &&
+        shoulderAngle >= 0 &&
+        shoulderAngle <= 30;
   }
 
   bool isAtTopPositionBicepCurl(double elbowAngle, double shoulderAngle) {
-    return elbowAngle >= elbowBicepCurlTopMin &&
-        elbowAngle <= elbowBicepCurlTopMax &&
-        shoulderAngle >= shoulderBicepCurlMin &&
-        shoulderAngle <= shoulderBicepCurlMax;
+    return elbowAngle >= 140 &&
+        elbowAngle <= 170 &&
+        shoulderAngle >= 0 &&
+        shoulderAngle <= 30;
   }
 
-  bool isInPlankPosition(
+  bool isAtPlankPosition(
       double hipAngle, double shoulderAngle, double kneeAngle) {
-    return hipAngle >= hipPlankMin &&
-        hipAngle <= hipPlankMax &&
-        shoulderAngle >= shoulderPlankMin &&
-        shoulderAngle <= shoulderPlankMax &&
-        kneeAngle >= kneePlankMin &&
-        kneeAngle <= kneePlankMax;
+    return hipAngle >= 150 &&
+        hipAngle <= 180 &&
+        shoulderAngle >= 50 &&
+        shoulderAngle <= 90 &&
+        kneeAngle >= 150 &&
+        kneeAngle <= 180;
   }
 
   @override
-  bool shouldRepaint(covariant PosePainter oldDelegate) {
-    return oldDelegate.imageSize != imageSize || oldDelegate.poses != poses;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 
   void drawText(Canvas canvas, double x, double y, String text) {

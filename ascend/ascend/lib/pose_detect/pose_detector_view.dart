@@ -8,8 +8,19 @@ import 'painters/pose_painter.dart';
 
 class PoseDetectorView extends StatefulWidget {
   final Function(InputImage inputImage, InputImageRotation rotation)? onImage;
+  final String exerciseName; // Name of the current exercise
+  final int sets; // Total sets for the exercise
+  final int reps; // Reps per set
+  final VoidCallback onExerciseCompleted; // Callback for navigation
 
-  const PoseDetectorView({super.key, this.onImage});
+  const PoseDetectorView({
+    super.key,
+    this.onImage,
+    required this.exerciseName,
+    required this.sets,
+    required this.reps,
+    required this.onExerciseCompleted,
+  });
 
   @override
   State<StatefulWidget> createState() => _PoseDetectorViewState();
@@ -23,10 +34,8 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   String? _text;
   var _cameraLensDirection = CameraLensDirection.back;
 
-  // Create instances of the exercise classes
-  final PushUpExercise pushUpExercise = PushUpExercise();
-  final SquatExercise squatExercise = SquatExercise();
-
+  int completedReps = 0; // Counter for completed reps
+  int completedSets = 0;
   @override
   void dispose() {
     _canProcess = false; // Prevent further processing
@@ -40,15 +49,15 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
       title: 'Pose Detector',
       customPaint: _customPaint,
       text: _text,
-      onImage: _processImage,
+      onImage: (inputImage, rotation) => _processImage(inputImage, rotation),
       initialCameraLensDirection: _cameraLensDirection,
       onCameraLensDirectionChanged: (value) => _cameraLensDirection = value,
     );
   }
 
   Future<void> _processImage(InputImage inputImage, InputImageRotation rotation) async {
-    if (!_canProcess || !mounted) return; // Ensure the widget is still mounted and can process
-    if (_isBusy) return; // Prevent overlapping processing
+    if (!_canProcess || !mounted) return;
+    if (_isBusy) return;
     _isBusy = true;
 
     try {
@@ -56,39 +65,44 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         _text = ''; // Clear previous text
       });
 
-      // Process the image using the pose detector
       final poses = await _poseDetector.processImage(inputImage);
-
       if (inputImage.metadata?.size != null && inputImage.metadata?.rotation != null) {
-        // Create a painter with updated rotation
         final painter = PosePainter(
           poses,
           inputImage.metadata!.size,
-          rotation, // Use the rotation passed here
+          rotation,
           _cameraLensDirection,
-        );
-        _customPaint = CustomPaint(painter: painter);
+          widget.exerciseName, // Pass the exercise name
+          widget.sets,         // Pass the total sets
+          widget.reps,         // Pass the reps per set
+          completedReps,
+          completedSets,       // Pass the completed reps counter
+          () {
+            // Callback for rep completion
+            setState(() {
+              completedReps++;
+              _text = '${widget.exerciseName}: $completedReps / ${widget.reps}';
+            });
 
-        // Process the pose data for specific exercises
-        for (Pose pose in poses) {
-          // Check if the pose belongs to a specific exercise (e.g., push-up or squat)
-          if (pushUpExercise.checkRep(pose)) {
-            if (mounted) {
-              setState(() {
-                _text = 'Push-Ups: ${pushUpExercise.repCount}';
+            // Check if all reps are completed
+            if (completedSets == widget.sets) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                widget.onExerciseCompleted(); // Navigate back to DailyWorkoutPage
               });
             }
-          } else if (squatExercise.checkRep(pose)) {
-            if (mounted) {
-              setState(() {
-                _text = 'Squats: ${squatExercise.repCount}';
-              });
-            }
-          }
-        }
+          },
+          () {
+            // Callback for exercise completion
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              widget.onExerciseCompleted(); // Navigate back to DailyWorkoutPage
+            });
+          },
+        );
+
+        _customPaint = CustomPaint(painter: painter);
       } else {
         _text = 'Poses found: ${poses.length}\n\n';
-        _customPaint = null; // No custom paint if no valid metadata
+        _customPaint = null;
       }
     } catch (e) {
       print('Error processing image: $e');
@@ -98,7 +112,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         });
       }
     } finally {
-      _isBusy = false; // Reset busy flag
+      _isBusy = false;
     }
   }
 }
