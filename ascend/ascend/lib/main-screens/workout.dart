@@ -5,7 +5,6 @@ import 'package:ascend/workouts/cut.dart';
 import 'package:ascend/workouts/fit.dart';
 import 'package:ascend/workouts/random_exercises/bicep_curl.dart';
 import 'package:ascend/workouts/random_exercises/crunch.dart';
-import 'package:ascend/workouts/random_exercises/plank.dart';
 import 'package:ascend/workouts/random_exercises/pushup.dart';
 import 'package:ascend/workouts/random_exercises/squat.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
@@ -21,7 +20,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     'Push-ups',
     'Squats',
     'Crunches',
-    'Plank',
     'Bicep-Curls',
   ];
 
@@ -195,9 +193,6 @@ class ExerciseCardWithImage extends StatelessWidget {
       case 'Crunches':
         imagePath = 'assets/images/Crunches.jpg';
         break;
-      case 'Plank':
-        imagePath = 'assets/images/planks.png';
-        break;
       case 'Bicep-Curls':
         imagePath = 'assets/images/Bicep.jpg';
         break;
@@ -225,12 +220,6 @@ class ExerciseCardWithImage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => CrunchPage()),
-            );
-            break;
-          case 'Plank':
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => PlankPage()),
             );
             break;
           case 'Bicep-Curls':

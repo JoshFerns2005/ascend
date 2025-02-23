@@ -5,7 +5,7 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'coordinates_translator.dart';
 import 'joint_deg.dart';
 
-enum NowPoses { pushup, squat, crunch, bicepCurl, plank }
+enum NowPoses { pushup, squat, crunch, bicepCurl }
 
 class PosePainter extends CustomPainter {
   PosePainter(
@@ -55,8 +55,6 @@ class PosePainter extends CustomPainter {
   static int leftBicepCurlCounter = 0; // Counter for left bicep curls
   static bool hasGoneDownLeftBicepCurl = false; // Flag for left bicep curls
 
-  static int plankCounter = 0; // Counter for planks
-  static bool hasStartedPlank = false; // Flag to track plank start
 
   static int currentSet = 0; // Track the current set
 
@@ -71,8 +69,7 @@ class PosePainter extends CustomPainter {
         return NowPoses.crunch;
       case 'Bicep Curls':
         return NowPoses.bicepCurl;
-      case 'Plank':
-        return NowPoses.plank;
+
       default:
         return NowPoses.pushup; // Default to push-ups
     }
@@ -95,8 +92,7 @@ class PosePainter extends CustomPainter {
     leftBicepCurlCounter = 0;
     hasGoneDownLeftBicepCurl = false;
 
-    plankCounter = 0;
-    hasStartedPlank = false;
+
 
     currentSet = 0;
   }
@@ -154,8 +150,6 @@ class PosePainter extends CustomPainter {
       } else if (nowPose == NowPoses.bicepCurl) {
         handleRightBicepCurl(rightElbowAngleValue, rightShoulderAngleValue);
         handleLeftBicepCurl(leftElbowAngleValue, leftShoulderAngleValue);
-      } else if (nowPose == NowPoses.plank) {
-        handlePlank(hipAngle, shoulderAngle, kneeAngle);
       }
 
       // Draw landmarks and lines
@@ -281,11 +275,6 @@ class PosePainter extends CustomPainter {
         drawText(
             canvas, 80, 70, 'Left Bicep Curls: $leftBicepCurlCounter / $reps');
         drawText(canvas, 80, 100, 'Sets: $currentSet / $sets');
-      } else if (nowPose == NowPoses.plank) {
-        paintText(PoseLandmarkType.rightHip);
-        paintText(PoseLandmarkType.rightShoulder);
-        paintText(PoseLandmarkType.rightKnee);
-        drawText(canvas, 80, 50, 'Plank: $plankCounter');
       }
 
       // Feedback text
@@ -449,24 +438,6 @@ class PosePainter extends CustomPainter {
     }
   }
 
-  void handlePlank(double hipAngle, double shoulderAngle, double kneeAngle) {
-    if (!hasStartedPlank &&
-        isAtPlankPosition(hipAngle, shoulderAngle, kneeAngle)) {
-      hasStartedPlank = true;
-      print('User has started the plank.');
-    }
-    if (hasStartedPlank) {
-      plankCounter++;
-      print('Plank time: ${plankCounter ~/ 30} seconds'); // Assuming 30 FPS
-
-      // Check if plank duration matches target reps
-      if ((plankCounter ~/ 30) >= reps) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          onExerciseCompleted();
-        });
-      }
-    }
-  }
 
   // Helper methods to check positions
   bool isAtBottomPositionPushUp(
@@ -531,16 +502,7 @@ class PosePainter extends CustomPainter {
         shoulderAngle <= 30;
   }
 
-  bool isAtPlankPosition(
-      double hipAngle, double shoulderAngle, double kneeAngle) {
-    return hipAngle >= 150 &&
-        hipAngle <= 180 &&
-        shoulderAngle >= 50 &&
-        shoulderAngle <= 90 &&
-        kneeAngle >= 150 &&
-        kneeAngle <= 180;
-  }
-
+  
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;

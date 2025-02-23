@@ -23,7 +23,6 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
     'Squats',
     'Bicep Curls',
     'Push Ups',
-    'Plank',
     'Lunges',
     'Deadlifts',
     'Burpees',
@@ -233,9 +232,7 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                                   ?.where((item) => item['exercise'] == exercise)
                                   .map((item) => ListTile(
                                         title: Text(
-                                          exercise == 'Plank'
-                                              ? 'Time Limit: ${item['time_limit']} seconds'
-                                              : 'Sets: ${item['sets']}, Reps: ${item['reps']}',
+                                              'Sets: ${item['sets']}, Reps: ${item['reps']}',
                                         ),
                                       ))
                                   .toList() ??
@@ -286,7 +283,7 @@ class _ExerciseDetailsDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-           if (exercise != 'Plank' && exercise != 'Rest') ...[
+           if (exercise != 'Rest') ...[
             TextField(
               controller: setsController,
               keyboardType: TextInputType.number,
@@ -297,13 +294,7 @@ class _ExerciseDetailsDialog extends StatelessWidget {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(labelText: 'Reps'),
             ),
-          ] else if (exercise == 'Plank') ...[
-            TextField(
-              controller: timeLimitController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'Time Limit (seconds)'),
-            ),
-          ],
+          ]
           // No input fields for "Rest"
         ],
       ),

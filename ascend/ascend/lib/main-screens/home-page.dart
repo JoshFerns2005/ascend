@@ -235,7 +235,6 @@ class HomePage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => DailyWorkoutPage(
-                                dailyExercises: [],
                               ),
                             ),
                           );

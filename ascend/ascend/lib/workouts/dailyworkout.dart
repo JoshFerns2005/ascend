@@ -1,6 +1,7 @@
+import 'package:ascend/main-screens/home-page.dart';
+import 'package:ascend/main-screens/home-screen.dart';
 import 'package:ascend/workouts/random_exercises/bicep_curl.dart';
 import 'package:ascend/workouts/random_exercises/crunch.dart';
-import 'package:ascend/workouts/random_exercises/plank.dart';
 import 'package:ascend/workouts/random_exercises/pushup.dart';
 import 'package:ascend/workouts/random_exercises/squat.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
@@ -8,60 +9,21 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class DailyWorkoutPage extends StatelessWidget {
-  final List<dynamic> dailyExercises;
+class DailyWorkoutPage extends StatefulWidget {
+  @override
+  _DailyWorkoutPageState createState() => _DailyWorkoutPageState();
+}
 
-  DailyWorkoutPage({required this.dailyExercises});
-
+class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
   final supabase = Supabase.instance.client;
 
-  // Fetch user schedule from Supabase
-  Future<List<Map<String, dynamic>>> fetchUserSchedule(String userId) async {
-    try {
-      final response = await supabase
-          .from('workout_schedule')
-          .select('day_of_week, exercises')
-          .eq('user_id', userId);
-
-      if (response != null && response.isNotEmpty) {
-        return List<Map<String, dynamic>>.from(response);
-      } else {
-        return [];
-      }
-    } catch (e) {
-      print('Error fetching user schedule: $e');
-      return [];
-    }
-  }
-
-  final Map<String, Widget Function(BuildContext)> exercisePageMap = {
+  // Map exercises to their respective pages
+  final Map<String, WidgetBuilder> exercisePageMap = {
     'Push Ups': (context) => PushUpPage(),
-    'Squat': (context) => SquatPage(),
+    'Squats': (context) => SquatPage(),
     'Crunches': (context) => CrunchPage(),
     'Bicep Curls': (context) => BicepCurlPage(),
-    'Plank': (context) => PlankPage(),
   };
-
-  // Helper function to order the schedule by day
-  List<Map<String, dynamic>> _getOrderedSchedule(
-      List<Map<String, dynamic>> schedule) {
-    final dayOrder = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
-    ];
-
-    return dayOrder.map((day) {
-      return schedule.firstWhere(
-        (item) => item['day_of_week'] == day,
-        orElse: () => {'exercises': []},
-      );
-    }).toList();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,136 +45,51 @@ class DailyWorkoutPage extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: Container(
-        color: Color.fromARGB(
-            255, 0, 43, 79), // Set background color for the entire page
+        color: Color.fromARGB(255, 0, 43, 79),
         child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: fetchUserSchedule(userId),
+          future: fetchRemainingExercises(userId, today),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                ),
+                child: CircularProgressIndicator(color: Colors.white),
               );
             } else if (snapshot.hasError) {
               return Center(
                 child: Text(
                   'Error loading schedule',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold),
                 ),
               );
             } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-              final schedule = snapshot.data!;
-              final orderedSchedule = _getOrderedSchedule(schedule);
-
-              // Find today's exercises
-              final todaysExercises = orderedSchedule.firstWhere(
-                    (item) => item['day_of_week'] == today,
-                    orElse: () => {'exercises': []},
-                  )['exercises'] ??
-                  [];
-
-              if (todaysExercises.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'No exercises scheduled for today',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (todaysExercises.isNotEmpty) {
-                            final firstExercise = todaysExercises.first;
-                            final exerciseName =
-                                firstExercise['exercise'] ?? 'Unknown Exercise';
-                            final sets = firstExercise['sets'] ?? 0;
-                            final reps = firstExercise['reps'] ?? 0;
-
-                            // Check if the exercise exists in the mapping
-                            final exercisePageBuilder =
-                                exercisePageMap[exerciseName];
-                            if (exercisePageBuilder != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      exercisePageBuilder(context),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Exercise "$exerciseName" is not implemented yet.'),
-                                ),
-                              );
-                            }
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('No exercises scheduled for today'),
-                              ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Color.fromARGB(255, 0, 43, 79),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Text(
-                          'Start Workout',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+              final remainingExercises = snapshot.data!;
 
               return Column(
                 children: [
                   Expanded(
                     child: ListView.builder(
-                      itemCount: todaysExercises.length,
+                      itemCount: remainingExercises.length,
                       itemBuilder: (context, index) {
-                        final exercise = todaysExercises[index];
+                        final exercise = remainingExercises[index];
                         return ListTile(
                           title: Text(
                             exercise['exercise'] ?? 'Unknown Exercise',
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
                             'Sets: ${exercise['sets'] ?? 0}, Reps: ${exercise['reps'] ?? 0}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 16,
-                            ),
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 16),
                           ),
                           tileColor: Color.fromARGB(255, 0, 43, 79),
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 10),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         );
                       },
                     ),
@@ -220,9 +97,9 @@ class DailyWorkoutPage extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: ElevatedButton(
-                      onPressed: () {
-                        if (todaysExercises.isNotEmpty) {
-                          final firstExercise = todaysExercises.first;
+                      onPressed: () async {
+                        if (remainingExercises.isNotEmpty) {
+                          final firstExercise = remainingExercises.first;
                           final exerciseName =
                               firstExercise['exercise'] ?? 'Unknown Exercise';
                           final sets = firstExercise['sets'] ?? 0;
@@ -235,23 +112,28 @@ class DailyWorkoutPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    exercisePageBuilder(context),
-                              ),
-                            );
+                                  builder: (context) =>
+                                      exercisePageBuilder(context)),
+                            ).then((_) async {
+                              // Mark exercise as completed after returning from the exercise page
+                              await markExerciseAsCompleted(
+                                  userId, today, exerciseName);
+
+                              // Trigger a rebuild to fetch updated data
+                              setState(() {});
+                            });
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                    'Exercise "$exerciseName" is not implemented yet.'),
-                              ),
+                                  content: Text(
+                                      'Exercise "$exerciseName" is not implemented yet.')),
                             );
                           }
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('No exercises scheduled for today'),
-                            ),
+                                content:
+                                    Text('No exercises scheduled for today')),
                           );
                         }
                       },
@@ -261,8 +143,7 @@ class DailyWorkoutPage extends StatelessWidget {
                         padding:
                             EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       child: Text(
                         'Start Workout',
@@ -279,22 +160,28 @@ class DailyWorkoutPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'No schedule found',
+                      'All exercises completed for today!',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WorkoutSchedulePage(),
-                          ),
-                        );
+                        if (user != null) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(
+                                  username:
+                                      user.userMetadata?['username'] ?? 'Guest'),
+                            ),
+                          );
+                        } else {
+                          // Handle case where user is not logged in
+                          print('No user is currently logged in.');
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
@@ -303,7 +190,7 @@ class DailyWorkoutPage extends StatelessWidget {
                             EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
                       child: Text(
-                        'Set Schedule',
+                        'Go to Home',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
@@ -316,5 +203,84 @@ class DailyWorkoutPage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// Function to mark an exercise as completed
+Future<void> markExerciseAsCompleted(
+    String userId, String dayOfWeek, String exerciseName) async {
+  try {
+    // Fetch the current completed_exercises for the user on the specific day
+    final response = await Supabase.instance.client
+        .from('workout_schedule')
+        .select('completed_exercises')
+        .eq('user_id', userId)
+        .eq('day_of_week', dayOfWeek) // Add this line to filter by day
+        .single();
+
+    Map<String, dynamic> completedExercises =
+        Map<String, dynamic>.from(response['completed_exercises'] ?? {});
+
+    // Update the completed exercises for the specific day
+    List<dynamic> completedToday =
+        List<dynamic>.from(completedExercises[dayOfWeek] ?? []);
+    if (!completedToday.contains(exerciseName)) {
+      completedToday.add(exerciseName);
+    }
+    completedExercises[dayOfWeek] = completedToday;
+
+    // Update the database
+    await Supabase.instance.client
+        .from('workout_schedule')
+        .update({'completed_exercises': completedExercises})
+        .eq('user_id', userId)
+        .eq('day_of_week', dayOfWeek); // Add this line to target the specific day
+
+    print('Successfully marked exercise as completed: $exerciseName');
+  } catch (e) {
+    print('Error marking exercise as completed: $e');
+  }
+}
+
+// Function to reset weekly progress
+Future<void> resetWeeklyProgress(String userId) async {
+  try {
+    await Supabase.instance.client
+        .from('workout_schedule')
+        .update({'completed_exercises': {}})
+        .eq('user_id', userId);
+  } catch (e) {
+    print('Error resetting weekly progress: $e');
+  }
+}
+
+// Function to fetch remaining exercises for the day
+Future<List<Map<String, dynamic>>> fetchRemainingExercises(
+    String userId, String dayOfWeek) async {
+  try {
+    // Fetch the user's workout schedule
+    final response = await Supabase.instance.client
+        .from('workout_schedule')
+        .select('exercises, completed_exercises')
+        .eq('user_id', userId)
+        .eq('day_of_week', dayOfWeek)
+        .single();
+
+    List<dynamic> todaysExercises = List<dynamic>.from(response['exercises']);
+    Map<String, dynamic> completedExercises =
+        Map<String, dynamic>.from(response['completed_exercises'] ?? {});
+    List<dynamic> completedToday =
+        List<dynamic>.from(completedExercises[dayOfWeek] ?? []);
+
+    // Filter out completed exercises
+    List<Map<String, dynamic>> remainingExercises = todaysExercises
+        .where((exercise) => !completedToday.contains(exercise['exercise']))
+        .toList()
+        .cast<Map<String, dynamic>>();
+
+    return remainingExercises;
+  } catch (e) {
+    print('Error fetching remaining exercises: $e');
+    return [];
   }
 }
