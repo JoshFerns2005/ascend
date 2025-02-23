@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 
 class FeedbackPage extends StatelessWidget {
   final List<Map<String, dynamic>> completedExercises;
-  final Map<String, int> statsGained;
+  final List<Map<String, int>> statsGainedPerExercise;
 
   FeedbackPage({
     required this.completedExercises,
-    required this.statsGained,
+    required this.statsGainedPerExercise,
   });
 
   @override
@@ -46,10 +46,14 @@ class FeedbackPage extends StatelessWidget {
                   itemCount: completedExercises.length,
                   itemBuilder: (context, index) {
                     final exercise = completedExercises[index];
-                    final exerciseName = exercise['exercise'] ?? 'Unknown Exercise';
+                    final exerciseName =
+                        exercise['exercise'] ?? 'Unknown Exercise';
                     final sets = exercise['sets'] ?? 0;
                     final reps = exercise['reps'] ?? 0;
                     final bodyParts = _getBodyParts(exerciseName);
+
+                    // Get stats for this specific exercise
+                    final statsForExercise = statsGainedPerExercise[index];
 
                     return Card(
                       color: Colors.white.withOpacity(0.1),
@@ -91,14 +95,18 @@ class FeedbackPage extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            ...statsGained.entries.map((entry) {
-                              return Text(
-                                '${entry.key.capitalize()}: +${entry.value}',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 16,
-                                ),
-                              );
+                            ...statsForExercise.entries.map((entry) {
+                              if (entry.value > 0) {
+                                return Text(
+                                  '${entry.key.capitalize()}: +${entry.value}',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 16,
+                                  ),
+                                );
+                              }
+                              return SizedBox
+                                  .shrink(); // Skip stats with zero value
                             }).toList(),
                           ],
                         ),

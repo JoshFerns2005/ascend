@@ -17,6 +17,49 @@ class DailyWorkoutPage extends StatefulWidget {
 
 class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
   final supabase = Supabase.instance.client;
+  List<Map<String, int>> _calculateStatsPerExercise(
+      List<Map<String, dynamic>> exercises) {
+    return exercises.map((exercise) {
+      final exerciseName = exercise['exercise'] ?? 'Unknown Exercise';
+      final reps = exercise['reps'] ?? 0;
+
+      // Initialize stats for this exercise
+      Map<String, int> stats = {
+        'strength': 0,
+        'stamina': 0,
+        'jump_strength': 0,
+        'flexibility': 0,
+        'endurance': 0,
+      };
+
+      // Calculate points based on total reps divided by 2
+      double points = reps / 2;
+
+      // Update stats based on the exercise
+      switch (exerciseName.toLowerCase()) {
+        case 'push ups':
+          stats['strength'] = points.toInt();
+          break;
+        case 'squats':
+          stats['stamina'] = points.toInt();
+          stats['jump_strength'] = points.toInt();
+          break;
+        case 'crunches':
+          stats['flexibility'] = points.toInt();
+          break;
+        case 'bicep curls':
+          stats['strength'] = points.toInt();
+          break;
+        case 'plank':
+          stats['endurance'] = points.toInt();
+          break;
+        default:
+          print('Unknown exercise: $exerciseName');
+      }
+
+      return stats;
+    }).toList();
+  }
 
   // Map exercises to their respective pages
   final Map<String, WidgetBuilder> exercisePageMap = {
@@ -131,67 +174,6 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                               ),
                             );
                           }
-                        } else {
-                          // All exercises are completed for the day
-                          try {
-                            // Fetch completed exercises
-                            final response = await Supabase.instance.client
-                                .from('workout_schedule')
-                                .select('exercises, completed_exercises')
-                                .eq('user_id', userId)
-                                .eq('day_of_week', today)
-                                .single();
-
-                            final todaysExercises =
-                                List<Map<String, dynamic>>.from(
-                                    response['exercises']);
-                            final completedExercises = List<String>.from(
-                                response['completed_exercises'][today] ?? []);
-
-                            // Filter completed exercises
-                            final completedExerciseDetails = todaysExercises
-                                .where((exercise) => completedExercises
-                                    .contains(exercise['exercise']))
-                                .toList();
-
-                            // Fetch stats gained
-                            final statsResponse = await Supabase.instance.client
-                                .from('statistics')
-                                .select('*')
-                                .eq('user_id', userId)
-                                .single();
-
-                            final Map<String, dynamic> stats =
-                                Map<String, dynamic>.from(statsResponse);
-
-                            final Map<String, int> statsGained = {
-                              'strength': stats['strength'] ?? 0,
-                              'stamina': stats['stamina'] ?? 0,
-                              'jump_strength': stats['jump_strength'] ?? 0,
-                              'flexibility': stats['flexibility'] ?? 0,
-                              'endurance': stats['endurance'] ?? 0,
-                            };
-
-                            // Navigate to the feedback page
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FeedbackPage(
-                                  completedExercises: completedExerciseDetails,
-                                  statsGained: statsGained,
-                                ),
-                              ),
-                            );
-                          } catch (e) {
-                            print(
-                                'Error fetching completed exercises or stats: $e');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Error loading feedback. Please try again later.'),
-                              ),
-                            );
-                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -225,19 +207,67 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                     ),
                     SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {
-                        if (user != null) {
-                          Navigator.pushReplacement(
+                      onPressed: () async {
+                        try {
+                          // Fetch completed exercises
+                          final response = await Supabase.instance.client
+                              .from('workout_schedule')
+                              .select('exercises, completed_exercises')
+                              .eq('user_id', userId)
+                              .eq('day_of_week', today)
+                              .single();
+
+                          final todaysExercises =
+                              List<Map<String, dynamic>>.from(
+                                  response['exercises']);
+                          final completedExercises = List<String>.from(
+                              response['completed_exercises'][today] ?? []);
+
+                          // Filter completed exercises
+                          final completedExerciseDetails = todaysExercises
+                              .where((exercise) => completedExercises
+                                  .contains(exercise['exercise']))
+                              .toList();
+
+                          // Fetch stats gained
+                          final statsResponse = await Supabase.instance.client
+                              .from('statistics')
+                              .select('*')
+                              .eq('user_id', userId)
+                              .single();
+
+                          final Map<String, dynamic> stats =
+                              Map<String, dynamic>.from(statsResponse);
+
+                          final Map<String, int> statsGained = {
+                            'strength': stats['strength'] ?? 0,
+                            'stamina': stats['stamina'] ?? 0,
+                            'jump_strength': stats['jump_strength'] ?? 0,
+                            'flexibility': stats['flexibility'] ?? 0,
+                            'endurance': stats['endurance'] ?? 0,
+                          };
+
+                          // Navigate to the feedback page
+                          Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => HomeScreen(
-                                  username: user.userMetadata?['username'] ??
-                                      'Guest'),
+                              builder: (context) => FeedbackPage(
+                                completedExercises: completedExerciseDetails,
+                                statsGainedPerExercise:
+                                    _calculateStatsPerExercise(
+                                        completedExerciseDetails),
+                              ),
                             ),
                           );
-                        } else {
-                          // Handle case where user is not logged in
-                          print('No user is currently logged in.');
+                        } catch (e) {
+                          print(
+                              'Error fetching completed exercises or stats: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Error loading feedback. Please try again later.'),
+                            ),
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -247,7 +277,7 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                             EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
                       child: Text(
-                        'Go to Home',
+                        'View Feedback',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
@@ -283,7 +313,8 @@ Future<void> markExerciseAsCompleted(
         Map<String, dynamic>.from(response.first['completed_exercises'] ?? {});
 
     // Update the completed exercises for the specific day
-    List<String> completedToday = List<String>.from(completedExercises[dayOfWeek] ?? []);
+    List<String> completedToday =
+        List<String>.from(completedExercises[dayOfWeek] ?? []);
     if (!completedToday.contains(exerciseName)) {
       completedToday.add(exerciseName);
     }
