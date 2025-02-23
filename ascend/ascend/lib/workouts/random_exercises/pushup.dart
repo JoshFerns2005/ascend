@@ -1,28 +1,32 @@
 import 'package:ascend/pose_detect/painters/pose_painter.dart';
 import 'package:ascend/pose_detect/pose_detector_view.dart';
-import 'package:ascend/workouts/dailyworkout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class PushUpPage extends StatelessWidget {
-  final String exerciseName = "Push Ups"; // Name of the exercise
+class PushUpPage extends StatefulWidget {
+  @override
+  _PushUpPageState createState() => _PushUpPageState();
+}
 
+class _PushUpPageState extends State<PushUpPage> {
+  final String exerciseName = "Push Ups"; // Name of the exercise
+  bool exerciseCompleted = false; // Track if the exercise is completed
 
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     final userId = user?.id ?? '';
-
     // Determine today's day
     final today = DateFormat('EEEE').format(DateTime.now());
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Push-Up Pose Detector'),
         centerTitle: true,
         elevation: 0,
       ),
-       body: FutureBuilder<Map<String, dynamic>?>(
+      body: FutureBuilder<Map<String, dynamic>?>(
         future: _fetchExerciseDetails(userId, exerciseName, today),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -53,7 +57,12 @@ class PushUpPage extends StatelessWidget {
                       sets: sets, // Dynamically fetched sets
                       reps: reps, // Dynamically fetched reps
                       onExerciseCompleted: () {
-                        Navigator.pop(context);
+                        // Mark the exercise as completed
+                        setState(() {
+                          exerciseCompleted = true;
+                        });
+                        // Navigate back and pass the completion status
+                        Navigator.pop(context, exerciseCompleted);
                       },
                     ),
                   ),

@@ -62,6 +62,7 @@ class _CameraViewState extends State<CameraView> {
   @override
   void dispose() {
     _stopLiveFeed(); // Ensure camera resources are released
+    
     super.dispose(); // Always call super.dispose()
   }
 
@@ -73,7 +74,9 @@ class _CameraViewState extends State<CameraView> {
   }
 
   Widget _liveFeedBody() {
-    if (_cameras.isEmpty || _controller == null || !_controller!.value.isInitialized) {
+    if (_cameras.isEmpty ||
+        _controller == null ||
+        !_controller!.value.isInitialized) {
       return Center(child: CircularProgressIndicator());
     }
     return ColoredBox(
@@ -140,7 +143,9 @@ class _CameraViewState extends State<CameraView> {
             onPressed: _switchLiveCamera,
             backgroundColor: Colors.black54,
             child: Icon(
-              Platform.isIOS ? Icons.flip_camera_ios_outlined : Icons.flip_camera_android_outlined,
+              Platform.isIOS
+                  ? Icons.flip_camera_ios_outlined
+                  : Icons.flip_camera_android_outlined,
               size: 25,
             ),
           ),
@@ -254,7 +259,9 @@ class _CameraViewState extends State<CameraView> {
         camera,
         ResolutionPreset.high,
         enableAudio: false,
-        imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
 
       await _controller?.initialize();
@@ -305,29 +312,41 @@ class _CameraViewState extends State<CameraView> {
     }
   }
 
-  Future<void> _stopLiveFeed() async {
+  Future _stopLiveFeed() async {
     try {
       await _controller?.stopImageStream();
-      await _controller?.dispose();
-      _controller = null;
     } catch (e) {
-      print('Error stopping live feed: $e');
+      print('Error stopping image stream: $e');
+    }
+    try {
+      await _controller?.dispose();
+    } catch (e) {
+      print('Error disposing camera controller: $e');
+    } finally {
+      _controller = null;
     }
   }
 
-  Future<void> _switchLiveCamera() async {
+  Future _switchLiveCamera() async {
     if (_changingCameraLens) return;
     setState(() => _changingCameraLens = true);
 
-    await _stopLiveFeed();
-    _cameraIndex = (_cameraIndex + 1) % _cameras.length;
-    await _startLiveFeed();
-
-    setState(() => _changingCameraLens = false);
+    try {
+      await _stopLiveFeed();
+      _cameraIndex = (_cameraIndex + 1) % _cameras.length;
+      await _startLiveFeed();
+    } catch (e) {
+      print('Error switching camera: $e');
+    } finally {
+      setState(() => _changingCameraLens = false);
+    }
   }
 
   void _processCameraImage(CameraImage image) {
-    if (!mounted) return;
+    if (!mounted ||
+        _controller == null ||
+        _cameraIndex < 0 ||
+        _cameraIndex >= _cameras.length) return;
 
     final inputImage = _inputImageFromCameraImage(image);
     if (inputImage == null) return;
@@ -337,13 +356,15 @@ class _CameraViewState extends State<CameraView> {
     InputImageRotation? rotation;
 
     if (Platform.isAndroid) {
-      var rotationCompensation = _orientations[_controller!.value.deviceOrientation];
+      var rotationCompensation =
+          _orientations[_controller!.value.deviceOrientation];
       if (rotationCompensation == null) return;
 
       if (camera.lensDirection == CameraLensDirection.front) {
         rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
       } else {
-        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+        rotationCompensation =
+            (sensorOrientation - rotationCompensation + 360) % 360;
       }
       rotation = InputImageRotationValue.fromRawValue(rotationCompensation)!;
     } else {
@@ -372,13 +393,15 @@ class _CameraViewState extends State<CameraView> {
     if (Platform.isIOS) {
       rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
     } else if (Platform.isAndroid) {
-      var rotationCompensation = _orientations[_controller!.value.deviceOrientation];
+      var rotationCompensation =
+          _orientations[_controller!.value.deviceOrientation];
       if (rotationCompensation == null) return null;
 
       if (camera.lensDirection == CameraLensDirection.front) {
         rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
       } else {
-        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+        rotationCompensation =
+            (sensorOrientation - rotationCompensation + 360) % 360;
       }
       rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
     }

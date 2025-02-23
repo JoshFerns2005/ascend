@@ -1,5 +1,6 @@
 import 'package:ascend/main-screens/home-page.dart';
 import 'package:ascend/main-screens/home-screen.dart';
+import 'package:ascend/workouts/feedback.dart';
 import 'package:ascend/workouts/random_exercises/bicep_curl.dart';
 import 'package:ascend/workouts/random_exercises/crunch.dart';
 import 'package:ascend/workouts/random_exercises/pushup.dart';
@@ -88,8 +89,8 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                                 fontSize: 16),
                           ),
                           tileColor: Color.fromARGB(255, 0, 43, 79),
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                         );
                       },
                     ),
@@ -99,42 +100,98 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                     child: ElevatedButton(
                       onPressed: () async {
                         if (remainingExercises.isNotEmpty) {
+                          // Start the first remaining exercise
                           final firstExercise = remainingExercises.first;
                           final exerciseName =
                               firstExercise['exercise'] ?? 'Unknown Exercise';
                           final sets = firstExercise['sets'] ?? 0;
                           final reps = firstExercise['reps'] ?? 0;
 
-                          // Check if the exercise exists in the mapping
                           final exercisePageBuilder =
                               exercisePageMap[exerciseName];
                           if (exercisePageBuilder != null) {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      exercisePageBuilder(context)),
-                            ).then((_) async {
-                              // Mark exercise as completed after returning from the exercise page
-                              await markExerciseAsCompleted(
-                                  userId, today, exerciseName);
-
-                              // Trigger a rebuild to fetch updated data
-                              setState(() {});
+                                builder: (context) =>
+                                    exercisePageBuilder(context),
+                              ),
+                            ).then((result) async {
+                              if (result == true) {
+                                await markExerciseAsCompleted(
+                                    userId, today, exerciseName, reps);
+                                setState(() {}); // Refresh the UI
+                              }
                             });
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content: Text(
-                                      'Exercise "$exerciseName" is not implemented yet.')),
+                                content: Text(
+                                    'Exercise "$exerciseName" is not implemented yet.'),
+                              ),
                             );
                           }
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content:
-                                    Text('No exercises scheduled for today')),
-                          );
+                          // All exercises are completed for the day
+                          try {
+                            // Fetch completed exercises
+                            final response = await Supabase.instance.client
+                                .from('workout_schedule')
+                                .select('exercises, completed_exercises')
+                                .eq('user_id', userId)
+                                .eq('day_of_week', today)
+                                .single();
+
+                            final todaysExercises =
+                                List<Map<String, dynamic>>.from(
+                                    response['exercises']);
+                            final completedExercises = List<String>.from(
+                                response['completed_exercises'][today] ?? []);
+
+                            // Filter completed exercises
+                            final completedExerciseDetails = todaysExercises
+                                .where((exercise) => completedExercises
+                                    .contains(exercise['exercise']))
+                                .toList();
+
+                            // Fetch stats gained
+                            final statsResponse = await Supabase.instance.client
+                                .from('statistics')
+                                .select('*')
+                                .eq('user_id', userId)
+                                .single();
+
+                            final Map<String, dynamic> stats =
+                                Map<String, dynamic>.from(statsResponse);
+
+                            final Map<String, int> statsGained = {
+                              'strength': stats['strength'] ?? 0,
+                              'stamina': stats['stamina'] ?? 0,
+                              'jump_strength': stats['jump_strength'] ?? 0,
+                              'flexibility': stats['flexibility'] ?? 0,
+                              'endurance': stats['endurance'] ?? 0,
+                            };
+
+                            // Navigate to the feedback page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FeedbackPage(
+                                  completedExercises: completedExerciseDetails,
+                                  statsGained: statsGained,
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            print(
+                                'Error fetching completed exercises or stats: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Error loading feedback. Please try again later.'),
+                              ),
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -174,8 +231,8 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => HomeScreen(
-                                  username:
-                                      user.userMetadata?['username'] ?? 'Guest'),
+                                  username: user.userMetadata?['username'] ??
+                                      'Guest'),
                             ),
                           );
                         } else {
@@ -208,22 +265,25 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
 
 // Function to mark an exercise as completed
 Future<void> markExerciseAsCompleted(
-    String userId, String dayOfWeek, String exerciseName) async {
+    String userId, String dayOfWeek, String exerciseName, int reps) async {
   try {
-    // Fetch the current completed_exercises for the user on the specific day
+    // Fetch the current completed_exercises for the user
     final response = await Supabase.instance.client
         .from('workout_schedule')
         .select('completed_exercises')
         .eq('user_id', userId)
-        .eq('day_of_week', dayOfWeek) // Add this line to filter by day
-        .single();
+        .eq('day_of_week', dayOfWeek);
+
+    if (response.isEmpty) {
+      print('No workout schedule found for user: $userId');
+      return;
+    }
 
     Map<String, dynamic> completedExercises =
-        Map<String, dynamic>.from(response['completed_exercises'] ?? {});
+        Map<String, dynamic>.from(response.first['completed_exercises'] ?? {});
 
     // Update the completed exercises for the specific day
-    List<dynamic> completedToday =
-        List<dynamic>.from(completedExercises[dayOfWeek] ?? []);
+    List<String> completedToday = List<String>.from(completedExercises[dayOfWeek] ?? []);
     if (!completedToday.contains(exerciseName)) {
       completedToday.add(exerciseName);
     }
@@ -234,11 +294,92 @@ Future<void> markExerciseAsCompleted(
         .from('workout_schedule')
         .update({'completed_exercises': completedExercises})
         .eq('user_id', userId)
-        .eq('day_of_week', dayOfWeek); // Add this line to target the specific day
+        .eq('day_of_week', dayOfWeek);
 
     print('Successfully marked exercise as completed: $exerciseName');
+
+    // Update the user's stats
+    await updateStats(userId, exerciseName, reps);
   } catch (e) {
     print('Error marking exercise as completed: $e');
+  }
+}
+
+Future<void> updateStats(String userId, String exerciseName, int reps) async {
+  try {
+    // Fetch the current stats for the user
+    final response = await Supabase.instance.client
+        .from('statistics')
+        .select('*')
+        .eq('user_id', userId);
+
+    Map<String, dynamic> stats;
+    if (response.isEmpty) {
+      // No stats found for the user, initialize default stats
+      stats = {
+        'user_id': userId,
+        'strength': 0,
+        'stamina': 0,
+        'jump_strength': 0,
+        'flexibility': 0,
+        'endurance': 0,
+      };
+      // Insert a new row with default stats
+      await Supabase.instance.client.from('statistics').insert(stats);
+    } else {
+      // Stats found, use the existing stats
+      stats = Map<String, dynamic>.from(response.first);
+    }
+
+    // Initialize stats variables
+    int strength = stats['strength'] ?? 0;
+    int stamina = stats['stamina'] ?? 0;
+    int jumpStrength = stats['jump_strength'] ?? 0;
+    int flexibility = stats['flexibility'] ?? 0;
+    int endurance = stats['endurance'] ?? 0;
+
+    // Calculate points based on total reps divided by 2
+    double points = reps / 2;
+
+    // Update stats based on the exercise
+    switch (exerciseName.toLowerCase()) {
+      case 'push ups':
+        strength += points.toInt(); // Add half the reps as strength points
+        break;
+      case 'squats':
+        stamina +=
+            points.toInt(); // Example: Each rep increases stamina by 1.5x
+        jumpStrength +=
+            points.toInt(); // Example: Each rep increases jump strength by 0.5x
+        break;
+      case 'crunches':
+        flexibility +=
+            points.toInt(); // Example: Each rep increases flexibility by 1x
+        break;
+      case 'bicep curls':
+        strength += points.toInt(); // Add half the reps as strength points
+        break;
+      case 'plank':
+        endurance += points
+            .toInt(); // Example: Each second of plank increases endurance by 2.5x
+        break;
+      default:
+        print('Unknown exercise: $exerciseName');
+    }
+
+    // Update the database with the new stats
+    await Supabase.instance.client.from('statistics').upsert({
+      'user_id': userId,
+      'strength': strength,
+      'stamina': stamina,
+      'jump_strength': jumpStrength,
+      'flexibility': flexibility,
+      'endurance': endurance,
+    });
+
+    print('Successfully updated stats for user: $userId');
+  } catch (e) {
+    print('Error updating stats: $e');
   }
 }
 
@@ -247,8 +388,7 @@ Future<void> resetWeeklyProgress(String userId) async {
   try {
     await Supabase.instance.client
         .from('workout_schedule')
-        .update({'completed_exercises': {}})
-        .eq('user_id', userId);
+        .update({'completed_exercises': {}}).eq('user_id', userId);
   } catch (e) {
     print('Error resetting weekly progress: $e');
   }
