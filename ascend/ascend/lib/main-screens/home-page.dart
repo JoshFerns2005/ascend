@@ -1,9 +1,10 @@
+import 'package:ascend/game-screens/GameScreen.dart';
+import 'package:ascend/game-screens/Navigator.dart';
 import 'package:ascend/workouts/dailyworkout.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 class HomePage extends StatelessWidget {
   final String username;
 
@@ -14,7 +15,8 @@ class HomePage extends StatelessWidget {
 
   // Dummy data for game character and motivational quote
   final String gameCharacter = 'Your Game Character';
-  final String motivationalQuote = '“Keep going. You’re getting better every day!”';
+  final String motivationalQuote =
+      '“Keep going. You’re getting better every day!”';
 
   // Fetch user schedule from Supabase or a dummy API
   Future<List<Map<String, dynamic>>> fetchUserSchedule(String userId) async {
@@ -36,7 +38,8 @@ class HomePage extends StatelessWidget {
   }
 
   // Helper function to order the schedule by day
-  List<Map<String, dynamic>> _getOrderedSchedule(List<Map<String, dynamic>> schedule) {
+  List<Map<String, dynamic>> _getOrderedSchedule(
+      List<Map<String, dynamic>> schedule) {
     final dayOrder = [
       'Monday',
       'Tuesday',
@@ -111,7 +114,8 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                         );
-                      } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      } else if (snapshot.hasData &&
+                          snapshot.data!.isNotEmpty) {
                         final schedule = snapshot.data!;
                         final orderedSchedule = _getOrderedSchedule(schedule);
 
@@ -121,47 +125,54 @@ class HomePage extends StatelessWidget {
                             controller: _pageController,
                             children: [
                               // Workout schedule page
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: orderedSchedule.map((item) {
-                                  final isToday = item['day_of_week'] == today;
-
-                                  // Convert exercises to a readable string
-                                  String exercisesString = '';
-                                  if (item['exercises'] is List) {
-                                    exercisesString = (item['exercises'] as List)
-                                        .map((exercise) => exercise['exercise'] ?? 'Unknown')
-                                        .join(', ');
-                                  } else {
-                                    exercisesString = 'No exercises scheduled';
-                                  }
-
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                    child: Text.rich(
-                                      TextSpan(
-                                        text: '${item['day_of_week']}: ',
-                                        style: TextStyle(
-                                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                        ),
-                                        children: [
-                                          TextSpan(
-                                            text: exercisesString.isEmpty
-                                                ? 'No exercises scheduled'
-                                                : exercisesString,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.normal,
-                                              color: Colors.white.withOpacity(0.9),
-                                              fontSize: 16,
-                                            ),
+                              SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: orderedSchedule.map((item) {
+                                    final isToday = item['day_of_week'] == today;
+                                    // Convert exercises to a readable string
+                                    String exercisesString = '';
+                                    if (item['exercises'] is List) {
+                                      exercisesString = (item['exercises']
+                                              as List)
+                                          .map((exercise) =>
+                                              exercise['exercise'] ?? 'Unknown')
+                                          .join(', ');
+                                    } else {
+                                      exercisesString = 'No exercises scheduled';
+                                    }
+                                
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8.0),
+                                      child: Text.rich(
+                                        TextSpan(
+                                          text: '${item['day_of_week']}: ',
+                                          style: TextStyle(
+                                            fontWeight: isToday
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                            color: Colors.white,
+                                            fontSize: 18,
                                           ),
-                                        ],
+                                          children: [
+                                            TextSpan(
+                                              text: exercisesString.isEmpty
+                                                  ? 'No exercises scheduled'
+                                                  : exercisesString,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.normal,
+                                                color:
+                                                    Colors.white.withOpacity(0.9),
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                }).toList(),
+                                    );
+                                  }).toList(),
+                                ),
                               ),
                               // Game character page
                               Center(
@@ -208,6 +219,47 @@ class HomePage extends StatelessWidget {
 
             SizedBox(height: 20),
 
+            // New Button: "The Game"
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: GestureDetector(
+                onTap: () {
+                  GameNavigator.navigateToGame(context);
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_arrow, color: Colors.blue, size: 30),
+                      SizedBox(width: 10),
+                      Text(
+                        'Start Game',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 20),
+
             // Quick Actions Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -234,8 +286,7 @@ class HomePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DailyWorkoutPage(
-                              ),
+                              builder: (context) => DailyWorkoutPage(),
                             ),
                           );
                         },
@@ -276,8 +327,10 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 10),
-                  _buildRecommendationCard('Full Body HIIT', 'Burn 400 kcal in 20 minutes!'),
-                  _buildRecommendationCard('Morning Yoga', 'Improve flexibility and relax.'),
+                  _buildRecommendationCard(
+                      'Full Body HIIT', 'Burn 400 kcal in 20 minutes!'),
+                  _buildRecommendationCard(
+                      'Morning Yoga', 'Improve flexibility and relax.'),
                 ],
               ),
             ),
@@ -288,7 +341,8 @@ class HomePage extends StatelessWidget {
   }
 
   // Function to build individual statistic cards
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return SizedBox(
       width: 120,
       child: Container(
@@ -310,7 +364,10 @@ class HomePage extends StatelessWidget {
             SizedBox(height: 5),
             Text(
               value,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
               textAlign: TextAlign.center,
             ),
           ],
@@ -342,7 +399,8 @@ class HomePage extends StatelessWidget {
               SizedBox(height: 10),
               Text(
                 title,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold, color: color),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -360,7 +418,8 @@ class HomePage extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         leading: Icon(Icons.recommend, color: Colors.white),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(title,
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         subtitle: Text(subtitle, style: TextStyle(color: Colors.white)),
         trailing: Icon(Icons.arrow_forward, color: Colors.white),
         onTap: () {
