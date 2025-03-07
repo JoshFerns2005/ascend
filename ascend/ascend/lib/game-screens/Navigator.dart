@@ -21,39 +21,42 @@ class GameNavigator {
     final userId = user.id;
 
     try {
-      // Check if the user has already selected a character
+      // Check if the user has already selected a character and gender
       final response = await supabase
           .from('user_character')
-          .select('gender')
+          .select('character, gender') // Fetch both 'character' and 'gender'
           .eq('user_id', userId);
 
       if (response.isEmpty) {
-        // User has not selected a character yet
+        // User has not selected a character or gender yet
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => CharacterSelectionScreen(
-              onGenderSelected: (gender) async {
+              onCharacterSelected: (character, gender) async {
                 try {
-                  // Save the selected gender to the database
+                  // Save the selected character and gender to the database
                   await supabase.from('user_character').insert({
                     'user_id': userId,
-                    'gender': gender,
+                    'character': character, // Store the character name
+                    'gender': gender, // Store the selected gender
                   });
 
-                  // Navigate to the game after selecting a character
+                  // Navigate to the game after selecting a character and gender
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => GameScreen(selectedGender: gender),
+                      builder: (context) =>
+                          GameScreenWrapper(selectedCharacter: character, selectedGender: gender),
                     ),
                   );
                 } catch (e) {
                   print('Error saving character selection: $e');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'Failed to save character selection. Please try again.')),
+                      content: Text(
+                          'Failed to save character selection. Please try again.'),
+                    ),
                   );
                 }
               },
@@ -61,12 +64,17 @@ class GameNavigator {
           ),
         );
       } else {
-        // User has already selected a character, go directly to the game
-        final selectedGender = response.first['gender'] as String? ?? 'male';
+        // User has already selected a character and gender, go directly to the game
+        final selectedCharacter =
+            response.first['character'] as String? ?? 'Archer'; // Default to 'Archer'
+        final selectedGender =
+            response.first['gender'] as String? ?? 'male'; // Default to 'male'
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => GameScreenWrapper(selectedGender: 'male'),
+            builder: (context) =>
+                GameScreenWrapper(selectedCharacter: selectedCharacter, selectedGender: selectedGender),
           ),
         );
       }
@@ -74,7 +82,8 @@ class GameNavigator {
       print('Error fetching user character data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Failed to load character data. Please try again.')),
+          content: Text('Failed to load character data. Please try again.'),
+        ),
       );
     }
   }

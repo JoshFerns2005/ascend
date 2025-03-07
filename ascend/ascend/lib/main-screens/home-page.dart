@@ -5,10 +5,80 @@ import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-class HomePage extends StatelessWidget {
+
+class HomePage extends StatefulWidget {
+  @override
   final String username;
 
   HomePage({required this.username});
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String? characterName;
+  String? gender;
+  Map<String, int> stats = {};
+  void initState() {
+    super.initState();
+    _fetchCharacterAndStats();
+  }
+
+  Future<void> _fetchCharacterAndStats() async {
+    try {
+      // Fetch user ID
+      final user = supabase.auth.currentUser;
+      final userId = user?.id;
+
+      if (userId == null) {
+        print('User not logged in.');
+        return;
+      }
+      print('Fetching data for user ID: $userId');
+
+      // Fetch character details
+      final characterResponse = await supabase
+          .from('user_character')
+          .select('character, gender')
+          .eq('user_id', userId)
+          .single();
+
+      if (characterResponse == null) {
+        print('No character data found for user ID: $userId');
+        return;
+      }
+
+      setState(() {
+        characterName = characterResponse['character'];
+        gender = characterResponse['gender'];
+      });
+      print('Character Name: $characterName, Gender: $gender');
+
+      // Fetch statistics
+      final statsResponse = await supabase
+          .from('statistics')
+          .select('strength, stamina, jump_strength, flexibility, endurance')
+          .eq('user_id', userId)
+          .single();
+
+      if (statsResponse == null) {
+        print('No statistics data found for user ID: $userId');
+        return;
+      }
+
+      setState(() {
+        stats = {
+          'Strength': statsResponse['strength'] ?? 0,
+          'Stamina': statsResponse['stamina'] ?? 0,
+          'Jump Strength': statsResponse['jump_strength'] ?? 0,
+          'Flexibility': statsResponse['flexibility'] ?? 0,
+          'Endurance': statsResponse['endurance'] ?? 0,
+        };
+      });
+      print('Statistics: $stats');
+    } catch (e) {
+      print('Error fetching character or stats: $e');
+    }
+  }
 
   final supabase = Supabase.instance.client;
   final PageController _pageController = PageController();
@@ -129,7 +199,8 @@ class HomePage extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: orderedSchedule.map((item) {
-                                    final isToday = item['day_of_week'] == today;
+                                    final isToday =
+                                        item['day_of_week'] == today;
                                     // Convert exercises to a readable string
                                     String exercisesString = '';
                                     if (item['exercises'] is List) {
@@ -139,9 +210,10 @@ class HomePage extends StatelessWidget {
                                               exercise['exercise'] ?? 'Unknown')
                                           .join(', ');
                                     } else {
-                                      exercisesString = 'No exercises scheduled';
+                                      exercisesString =
+                                          'No exercises scheduled';
                                     }
-                                
+
                                     return Padding(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 8.0),
@@ -162,8 +234,8 @@ class HomePage extends StatelessWidget {
                                                   : exercisesString,
                                               style: TextStyle(
                                                 fontWeight: FontWeight.normal,
-                                                color:
-                                                    Colors.white.withOpacity(0.9),
+                                                color: Colors.white
+                                                    .withOpacity(0.9),
                                                 fontSize: 16,
                                               ),
                                             ),
@@ -174,18 +246,98 @@ class HomePage extends StatelessWidget {
                                   }).toList(),
                                 ),
                               ),
+
                               // Game character page
-                              Center(
-                                child: Text(
-                                  gameCharacter,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                              // Replace the existing "Game character page" section with this:
+                              // Game character page
+                              Container(
+                                color: Color.fromARGB(255, 0, 43, 79),
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(0,20.0,20,20),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Left: Full-Body Game Character Image
+                                      Expanded(
+                                        flex: 2,
+                                        child: Container(
+                                          width: 400, // Full width for the image
+                                          height:
+                                              500, // Adjust height as needed
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                              image: AssetImage(
+                                                'assets/images/game_images/$gender/$characterName/$characterName.png',
+                                              ),
+                                              fit: BoxFit
+                                                  .contain, // Ensure the image covers the container
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Right: Statistics Section
+                                      Expanded(
+                                        flex: 3,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,vertical: 30),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Strength: ${stats['Strength']}',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              SizedBox(height: 10),
+                                              Text(
+                                                'Stamina: ${stats['Stamina']}',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              SizedBox(height: 10),
+                                              Text(
+                                                'Jump Strength: ${stats['Jump Strength']}',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              SizedBox(height: 10),
+                                              Text(
+                                                'Flexibility: ${stats['Flexibility']}',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              SizedBox(height: 10),
+                                              Text(
+                                                'Endurance: ${stats['Endurance']}',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              // Motivational quote page
+                              ), // Motivational quote page
                               Center(
                                 child: Text(
                                   motivationalQuote,
@@ -341,37 +493,47 @@ class HomePage extends StatelessWidget {
   }
 
   // Function to build individual statistic cards
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return SizedBox(
-      width: 120,
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 5),
-        padding: EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: Color.fromARGB(255, 0, 43, 79),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 30),
-            SizedBox(height: 10),
-            Text(
-              title,
-              style: TextStyle(fontSize: 14, color: Colors.white),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 5),
-            Text(
-              value,
-              style: TextStyle(
+  Widget _buildStatCard(String title, int value, IconData icon, Color color) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                value.toString(),
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

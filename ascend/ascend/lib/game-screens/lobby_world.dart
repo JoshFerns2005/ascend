@@ -9,17 +9,25 @@ import 'background.dart'; // Import the Background class
 
 class LobbyWorld extends FlameGame {
   late Player player;
-  late JoystickComponent joystick;
   final String selectedGender;
+  final String selectedCharacter;
 
   // Buttons
+  late ButtonComponent leftButton;
+  late ButtonComponent rightButton;
   late ButtonComponent jumpButton;
-  late ButtonComponent hitButton;
+  late ButtonComponent attackButton;
+
+  bool isLeftPressed = false;
+  bool isRightPressed = false;
 
   // Reset counter
   int resetCounter = 0;
 
-  LobbyWorld({required this.selectedGender});
+  LobbyWorld({
+    required this.selectedGender,
+    required this.selectedCharacter,
+  });
 
   @override
   Future<void> onLoad() async {
@@ -36,33 +44,60 @@ class LobbyWorld extends FlameGame {
     add(platform);
 
     // Initialize the player with reduced width
-    player = Player(platform, selectedGender)
-      ..size = Vector2(50, 120) // Reduce the width of the player
+    player = Player(platform, selectedGender, selectedCharacter)
+      ..size = Vector2(90, 90) // Reduce the width of the player
       ..position = Vector2(size.x / 2, platform.y - 100); // Adjusted position
     add(player);
 
-    // Initialize the joystick
-    final knobPaint = Paint()..color = Colors.blue.withOpacity(0.5);
-    final backgroundPaint = Paint()..color = Colors.blue.withOpacity(0.2);
-    joystick = JoystickComponent(
-      knob: CircleComponent(radius: 30, paint: knobPaint),
-      background: CircleComponent(radius: 60, paint: backgroundPaint),
-      margin: const EdgeInsets.only(left: 40, bottom: 40),
-    );
-    add(joystick);
-
-    // Add Jump and Hit buttons
+    // Add Left, Right, Jump, and Hit buttons
     addButtons();
+    leftButton = ButtonComponent(
+      button: RectangleComponent(
+        size: Vector2(80, 80),
+        paint: Paint()..color = Colors.blue.withOpacity(0.5),
+      ),
+      position: Vector2(40, size.y - 100),
+      onPressed: () {
+        isLeftPressed = true; // Set flag when button is pressed
+      },
+      onReleased: () {
+        isLeftPressed = false; // Reset flag when button is released
+      },
+      
+    );
+    rightButton = ButtonComponent(
+      button: RectangleComponent(
+        size: Vector2(80, 80),
+        paint: Paint()..color = Colors.blue.withOpacity(0.5),
+      ),
+      position: Vector2(140, size.y - 100),
+      onPressed: () {
+        isRightPressed = true; // Set flag when button is pressed
+      },
+      onReleased: () {
+        isRightPressed = false; // Reset flag when button is released
+      },
+      
+    );
+
+    // Add buttons to the game
+    add(leftButton);
+    add(rightButton);
+    add(jumpButton);
+    add(attackButton);
   }
 
   @override
   void update(double dt) {
     super.update(dt);
 
-    // Update player movement based on joystick input
-    if (joystick.direction != JoystickDirection.idle) {
-      // Restrict movement to horizontal axis only
-      player.move(Vector2(joystick.relativeDelta.x * dt, 0));
+    // Update player movement based on button states
+   if (isLeftPressed) {
+      player.move(Vector2(-1, 0)); // Move left
+    } else if (isRightPressed) {
+      player.move(Vector2(1, 0)); // Move right
+    } else {
+      player.move(Vector2(0, 0)); // Idle when no button is pressed
     }
   }
 
@@ -85,37 +120,73 @@ class LobbyWorld extends FlameGame {
     // For example, reset player position, score, etc.
   }
 
-  // Method to add Jump and Hit buttons
-void addButtons() {
-  // Jump Button
-  jumpButton = ButtonComponent(
-    button: RectangleComponent(
-      size: Vector2(80, 80), // Size of the button
-      paint: Paint()
-        ..color = Colors.green.withOpacity(0.5), // Semi-transparent green color
-    ),
-    onPressed: () {
-      player.jump(); // Call the jump method on the player
-    },
-    position: Vector2(size.x - 180, size.y - 100), // Positioned horizontally at the bottom, opposite to the joystick
-  );
+  // Method to add Left, Right, Jump, and Hit buttons
+  void addButtons() {
+    // Left Button
+    leftButton = ButtonComponent(
+      button: RectangleComponent(
+        size: Vector2(80, 80), // Size of the button
+        paint: Paint()
+          ..color = Colors.blue.withOpacity(0.5), // Semi-transparent blue color
+      ),
+      onPressed: () {
+        // No specific action needed here; movement is handled in update()
+      },
+      position: Vector2(
+          40, size.y - 100), // Positioned horizontally at the bottom-left
+    );
 
-  // Hit Button
-  hitButton = ButtonComponent(
-    button: RectangleComponent(
-      size: Vector2(80, 80), // Size of the button
-      paint: Paint()
-        ..color = Colors.red.withOpacity(0.5), // Semi-transparent red color
-    ),
-    onPressed: () {
-      // Placeholder for hit functionality
-      print('Hit button pressed');
-    },
-    position: Vector2(size.x - 90, size.y - 100), // Positioned next to the Jump button
-  );
+    // Right Button
+    rightButton = ButtonComponent(
+      button: RectangleComponent(
+        size: Vector2(80, 80), // Size of the button
+        paint: Paint()
+          ..color = Colors.blue.withOpacity(0.5), // Semi-transparent blue color
+      ),
+      onPressed: () {
+        // No specific action needed here; movement is handled in update()
+      },
+      position:
+          Vector2(140, size.y - 100), // Positioned next to the Left button
+    );
 
-  // Add buttons to the game
-  add(jumpButton);
-  add(hitButton);
-}
+    // Jump Button
+    jumpButton = ButtonComponent(
+      button: RectangleComponent(
+        size: Vector2(80, 80), // Size of the button
+        paint: Paint()
+          ..color =
+              Colors.green.withOpacity(0.5), // Semi-transparent green color
+      ),
+      onPressed: () {
+        if (!player.isJumping) {
+          player
+              .jump(); // Call the jump method on the player only if not already jumping
+        }
+      },
+      position: Vector2(
+          size.x - 180,
+          size.y -
+              100), // Positioned horizontally at the bottom, opposite to the Left/Right buttons
+    );
+
+    // Hit Button
+    attackButton = ButtonComponent(
+      button: RectangleComponent(
+        size: Vector2(80, 80), // Size of the button
+        paint: Paint()
+          ..color = Colors.red.withOpacity(0.5), // Semi-transparent red color
+      ),
+      onPressed: () {
+        player.attack(); // Call the attack method on the player
+      },
+      position: Vector2(
+          size.x - 90, size.y - 100), // Positioned next to the Jump button
+    );
+    // Add buttons to the game
+    add(leftButton);
+    add(rightButton);
+    add(jumpButton);
+    add(attackButton);
+  }
 }

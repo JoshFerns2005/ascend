@@ -76,6 +76,13 @@ flutter:
     - assets/images/game_images/
     - assets/images/game_images/male/
     - assets/images/game_images/female/
+    - assets/images/game_images/male/Archer/
+    - assets/images/game_images/male/Swordsman/
+    - assets/images/game_images/male/Wizard/
+    - assets/images/game_images/female/Enchantress/
+    - assets/images/game_images/female/Knight/
+    - assets/images/game_images/female/Musketeer/
+
 
     - .env
 

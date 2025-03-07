@@ -107,6 +107,57 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                       fontWeight: FontWeight.bold),
                 ),
               );
+            } else if (snapshot.hasData && snapshot.data!.isEmpty) {
+              // Handle rest day
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Today is a rest day.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Taking rest is essential for growth!',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 18,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Enjoy your rest day!'),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Color.fromARGB(255, 0, 43, 79),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Rest Day',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
               final remainingExercises = snapshot.data!;
 
@@ -437,17 +488,24 @@ Future<List<Map<String, dynamic>>> fetchRemainingExercises(
         .eq('day_of_week', dayOfWeek)
         .single();
 
-    List<dynamic> todaysExercises = List<dynamic>.from(response['exercises']);
+    List<dynamic> todaysExercises = List.from(response['exercises']);
     Map<String, dynamic> completedExercises =
-        Map<String, dynamic>.from(response['completed_exercises'] ?? {});
+        Map.from(response['completed_exercises'] ?? {});
     List<dynamic> completedToday =
-        List<dynamic>.from(completedExercises[dayOfWeek] ?? []);
+        List.from(completedExercises[dayOfWeek] ?? []);
+
+    // Check if today is a rest day
+    if (todaysExercises.isEmpty ||
+        (todaysExercises.length == 1 &&
+            todaysExercises.first['exercise'] == 'Rest')) {
+      return []; // Return an empty list for rest days
+    }
 
     // Filter out completed exercises
     List<Map<String, dynamic>> remainingExercises = todaysExercises
         .where((exercise) => !completedToday.contains(exercise['exercise']))
-        .toList()
-        .cast<Map<String, dynamic>>();
+        .cast<Map<String, dynamic>>()
+        .toList();
 
     return remainingExercises;
   } catch (e) {

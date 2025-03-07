@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for SystemChrome
 
 class GameScreenWrapper extends StatefulWidget {
+  final String selectedCharacter;
   final String selectedGender;
-
-  GameScreenWrapper({required this.selectedGender});
+  GameScreenWrapper({required this.selectedCharacter, required this.selectedGender});
 
   @override
   _GameScreenWrapperState createState() => _GameScreenWrapperState();
@@ -34,6 +34,6 @@ class _GameScreenWrapperState extends State<GameScreenWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return GameScreen(selectedGender: widget.selectedGender);
+    return GameScreen(selectedCharacter: widget.selectedCharacter, selectedGender: widget.selectedGender);
   }
 }
