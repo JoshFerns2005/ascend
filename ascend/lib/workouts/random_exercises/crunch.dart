@@ -1,110 +1,115 @@
-import 'dart:math';
 import 'package:ascend/pose_detect/painters/pose_painter.dart';
 import 'package:ascend/pose_detect/pose_detector_view.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:intl/intl.dart'; // For formatting the current day
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class CrunchPage extends StatefulWidget {
-  @override
-  _CrunchPageState createState() => _CrunchPageState();
-}
-
-class _CrunchPageState extends State<CrunchPage> {
-  int crunchCounter = 0;
-  bool isGoodForm = true;
-  bool isCrunchingUp = false; // Track if the user is crunching up
-  double lowerThreshold = 30.0; // Torso angle threshold for crunch completion
-  double upperThreshold = 70.0; // Torso angle threshold to reset
-
-  final PoseDetector _poseDetector =
-      PoseDetector(options: PoseDetectorOptions());
-
-  void updateCrunchCounter(double torsoAngle) {
-    setState(() {
-      if (torsoAngle < lowerThreshold && !isCrunchingUp) {
-        isCrunchingUp = true; // User is crunching up
-      } else if (torsoAngle > upperThreshold && isCrunchingUp) {
-        crunchCounter++; // Crunch completed
-        isCrunchingUp = false;
-      }
-    });
-  }
-
-  @override
-  void dispose() async {
-    await _poseDetector.close();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    PosePainter.nowPose = NowPoses.crunch; // Set current pose to crunch
-  }
-
-  // Calculate torso angle (shoulder, hip, knee)
-  double calculateAngle(Offset shoulder, Offset hip, Offset knee) {
-    final shoulderToHip = Offset(hip.dx - shoulder.dx, hip.dy - shoulder.dy);
-    final hipToKnee = Offset(knee.dx - hip.dx, knee.dy - hip.dy);
-
-    final dotProduct = shoulderToHip.dx * hipToKnee.dx + shoulderToHip.dy * hipToKnee.dy;
-    final magnitudeShoulderToHip = sqrt(pow(shoulderToHip.dx, 2) + pow(shoulderToHip.dy, 2));
-    final magnitudeHipToKnee = sqrt(pow(hipToKnee.dx, 2) + pow(hipToKnee.dy, 2));
-
-    final cosineTheta = dotProduct / (magnitudeShoulderToHip * magnitudeHipToKnee);
-    return acos(cosineTheta) * (180.0 / pi); // Return angle in degrees
-  }
+class CrunchPage extends StatelessWidget {
+  final String exerciseName = "Crunches"; // Name of the exercise
 
   @override
   Widget build(BuildContext context) {
+    // Retrieve the user session to get userId
+    final user = Supabase.instance.client.auth.currentUser;
+    final userId = user?.id ?? '';
+
+    // Determine today's day
+    final today = DateFormat('EEEE').format(DateTime.now());
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Crunch Pose Detector'),
         centerTitle: true,
         elevation: 0,
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(child: PoseDetectorView(onImage: (inputImage) async {
-              final poses = await _poseDetector.processImage(inputImage);
-
-              if (poses.isNotEmpty) {
-                final shoulder = poses[0].landmarks[PoseLandmarkType.leftShoulder];
-                final hip = poses[0].landmarks[PoseLandmarkType.leftHip];
-                final knee = poses[0].landmarks[PoseLandmarkType.leftKnee];
-
-                if (shoulder != null && hip != null && knee != null) {
-                  final angle = calculateAngle(
-                    Offset(shoulder.x, shoulder.y),
-                    Offset(hip.x, hip.y),
-                    Offset(knee.x, knee.y),
-                  );
-                  updateCrunchCounter(angle);
-                } else {
-                  print('Missing one or more landmarks.');
-                }
-              }
-            })),
-            SizedBox(height: 20),
-            Text(
-              'Crunch Counter: $crunchCounter',
-              style: TextStyle(fontSize: 24),
-            ),
-            SizedBox(height: 10),
-            Text(
-              isGoodForm ? 'Good Form' : 'Bad Form',
-              style: TextStyle(
-                fontSize: 20,
-                color: isGoodForm ? Colors.green : Colors.red,
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: _fetchExerciseDetails(userId, exerciseName, today),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error loading exercise details',
+                style: TextStyle(fontSize: 18, color: Colors.red),
               ),
-            ),
-          ],
-        ),
+            );
+          } else if (snapshot.hasData && snapshot.data != null) {
+            final exerciseDetails = snapshot.data!;
+            final sets = exerciseDetails['sets'] ?? 3; // Default to 3 sets
+            final reps = exerciseDetails['reps'] ?? 20; // Default to 20 reps
+
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: PoseDetectorView(
+                      exerciseName: exerciseName, // Pass the exercise name
+                      sets: sets, // Dynamically fetched sets
+                      reps: reps, // Dynamically fetched reps
+                      onExerciseCompleted: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+            );
+          } else {
+            return Center(
+              child: Text(
+                'No exercise details found for today',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+              ),
+            );
+          }
+        },
       ),
     );
+  }
+
+  // Fetch exercise details from Supabase for the current day
+  Future<Map<String, dynamic>?> _fetchExerciseDetails(String userId, String exerciseName, String today) async {
+    try {
+      // Fetch the workout schedule for the user
+      final response = await Supabase.instance.client
+          .from('workout_schedule')
+          .select('day_of_week, exercises')
+          .eq('user_id', userId)
+          .eq('day_of_week', today);
+
+      // Print the entire response for debugging
+      print('Fetched response from Supabase: $response');
+
+      if (response != null && response.isNotEmpty) {
+        // Extract the exercises for today
+        final todaysSchedule = response.first;
+        final List<dynamic> exercises = todaysSchedule['exercises'];
+
+        // Print the exercises for today
+        print('Exercises for today ($today): $exercises');
+
+        // Find the specific exercise by name
+        final exercise = exercises.firstWhere(
+          (exercise) => exercise['exercise'] == exerciseName,
+          orElse: () => null,
+        );
+
+        // Print the found exercise for debugging
+        print('Found exercise "$exerciseName": $exercise');
+
+        return exercise as Map<String, dynamic>?;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching exercise details: $e');
+      return null;
+    }
   }
 }
