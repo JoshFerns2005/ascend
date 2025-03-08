@@ -33,6 +33,7 @@ class LobbyWorld extends FlameGame {
     required this.selectedCharacter,
   });
 
+  @override
   Future<void> onLoad() async {
     // Reset the game state twice before loading components
     await resetGameTwice();
@@ -52,41 +53,28 @@ class LobbyWorld extends FlameGame {
       ..position = Vector2(size.x / 2, platform.y - 100); // Adjusted position
     add(player);
 
-    // Add a camera that follows the player vertically but not horizontally
-    camera.follow(player, verticalOnly: true);
+    // Add a camera that follows the player
+    camera.follow(player);
 
     // Add Left, Right, Jump, and Hit buttons
     addButtons();
   }
 
   @override
-  @override
   void update(double dt) {
     super.update(dt);
 
     // Update player movement based on button states
     if (isLeftPressed) {
-      moveBackground(
-          Vector2(2, 0)); // Move background right (player appears to move left)
-                player.move(Vector2(-1, 0)); // Move left
-
+      player.move(Vector2(-1, 0)); // Move left
     } else if (isRightPressed) {
-      moveBackground(Vector2(
-          -2, 0)); // Move background left (player appears to move right)
-                          player.move(Vector2(1, 0)); // Move left
-
+      player.move(Vector2(1, 0)); // Move right
     } else {
-      moveBackground(Vector2(0, 0)); // Stop background movement
+      player.move(Vector2(0, 0)); // Idle when no button is pressed
     }
 
     // Update parallax background based on player movement
     updateParallax(dt);
-  }
-
-  // Method to move the background
-  void moveBackground(Vector2 direction) {
-    double backgroundSpeed = 200; // Adjust the speed of the background movement
-    parallax.parallax?.baseVelocity = direction * backgroundSpeed;
   }
 
   // Method to reset the game state twice
@@ -200,30 +188,28 @@ class LobbyWorld extends FlameGame {
     add(hitButton);
   }
 
-  Future<void> addParallaxBackground() async {
-    parallax = await loadParallaxComponent(
-      [
-        ParallaxImageData('game_images/background.jpg'), // Background layer
-      ],
-      baseVelocity: Vector2(0, 0), // Initial velocity
-      repeat: ImageRepeat.repeat, // Repeat the background infinitely
-    );
+ Future<void> addParallaxBackground() async {
+  parallax = await loadParallaxComponent(
+    [
+      ParallaxImageData('game_images/background.jpg'), // Background layer
+    ],
+    baseVelocity: Vector2(0, 0), // Initial velocity
+    repeat: ImageRepeat.repeat, // Repeat the background infinitely
+  );
 
-    add(parallax);
+  add(parallax);
+}
+
+ void updateParallax(double dt) {
+  double parallaxSpeed = 100; // Adjust the speed of the parallax effect
+
+  // Update the parallax velocity based on player movement
+  if (isLeftPressed) {
+    parallax.parallax?.baseVelocity = Vector2(-parallaxSpeed, 0); // Move background right
+  } else if (isRightPressed) {
+    parallax.parallax?.baseVelocity = Vector2(parallaxSpeed, 0); // Move background left
+  } else {
+    parallax.parallax?.baseVelocity = Vector2(0, 0); // Stop parallax movement
   }
-
-  void updateParallax(double dt) {
-    double parallaxSpeed = 100; // Adjust the speed of the parallax effect
-
-    // Update the parallax velocity based on player movement
-    if (isLeftPressed) {
-      parallax.parallax?.baseVelocity =
-          Vector2(-parallaxSpeed, 0); // Move background right
-    } else if (isRightPressed) {
-      parallax.parallax?.baseVelocity =
-          Vector2(parallaxSpeed, 0); // Move background left
-    } else {
-      parallax.parallax?.baseVelocity = Vector2(0, 0); // Stop parallax movement
-    }
-  }
+}
 }
