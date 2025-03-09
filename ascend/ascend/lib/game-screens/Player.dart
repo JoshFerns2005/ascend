@@ -5,35 +5,28 @@ import 'platform.dart';
 import 'constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Future<Map<String, dynamic>> fetchAnimationData(
-    String characterName, String gender, String animationType) async {
-  try {
-    final response = await Supabase.instance.client
-        .from('animations')
-        .select('*')
-        .eq('character_name', gender)
-        .eq('gender', characterName)
-        .eq('animation_type', animationType)
-        .single();
-    return Map<String, dynamic>.from(response);
-  } catch (e) {
-    print('Error fetching animation data: $e');
-    return {};
-  }
-}
+final supabase = Supabase.instance.client;
+final user = supabase.auth.currentUser;
+final userid = user?.id;
 
 class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
   final Platform platform;
   final String selectedCharacter; // Name of the character (e.g., warrior)
   final String selectedGender; // Gender of the character (e.g., male)
-  double speed = 5; // Movement speed
-  double gravity = 800; // Gravity strength
+  bool isFlipped = false; // Track whether the character is flipped
+  double stamina = 0;
+  double strength = 0;
+  double jumpStrength = 0;
+  double flexibility = 0;
+  double endurance = 0;
+  double gravity = 800;
   bool isOnGround = false;
   double velocityY = 0; // Vertical velocity
   bool isJumping = false; // Flag to track if the player is already jumping
   bool isRunning = false; // Flag to track if the player is running
   bool isFacingRight = true; // Track the direction the player is facing
   bool isAttacking = false;
+
   // Animation states (nullable to handle missing data)
   SpriteAnimation? idleAnimation;
   SpriteAnimation? runRightAnimation;
@@ -46,10 +39,57 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
   Player(this.platform, this.selectedCharacter, this.selectedGender)
       : super(size: Vector2(200, 200)); // Increased size
 
+  Future<Map<String, dynamic>> fetchAnimationData(
+      String characterName, String gender, String animationType) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('animations')
+          .select('*')
+          .eq('character_name', gender)
+          .eq('gender', characterName)
+          .eq('animation_type', animationType)
+          .single();
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      print('Error fetching animation data: $e');
+      return {};
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchStatistics() async {
+    try {
+      // Ensure userid is not null
+      if (userid == null) {
+        print('User ID is null. Cannot fetch statistics.');
+        return [];
+      }
+
+      // Fetch all rows from the 'statistics' table
+      final response = await Supabase.instance.client
+          .from('statistics')
+          .select('*')
+          .eq('user_id', userid!); // Use userid! to assert it's not null
+
+      // Convert the response to a list of maps
+      if (response != null) {
+        return List<Map<String, dynamic>>.from(response);
+      } else {
+        print('No statistics data found.');
+        return [];
+      }
+    } catch (e) {
+      print('Error fetching statistics data: $e');
+      return [];
+    }
+  }
+
   @override
   Future<void> onLoad() async {
     // Load animations dynamically
     await _loadAnimations();
+
+    // Load statistics and apply them
+    await loadStats();
 
     // Set the initial animation to idle if available
     if (idleAnimation != null) {
@@ -67,9 +107,32 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
   Future<void> _loadAnimations() async {
     await _loadIdleAnimation();
     await _loadRunRightAnimation();
-    await _loadRunLeftAnimation();
+    // await _loadRunLeftAnimation();
     await _loadJumpAnimation();
     await _loadAttackAnimation(); // Load attack animation
+  }
+
+  Future<void> loadStats() async {
+    final stats = await fetchStatistics();
+    if (stats.isNotEmpty) {
+      for (final stat in stats) {
+        // Apply the fetched statistics to the player's properties
+        stamina = stat['stamina']?.toDouble() ?? 0;
+        strength = stat['strength']?.toDouble() ?? 0;
+        jumpStrength = stat['jump_strength']?.toDouble() ?? 0;
+        flexibility = stat['flexibility']?.toDouble() ?? 0;
+        endurance = stat['endurance']?.toDouble() ?? 0;
+
+        print('Stats loaded: '
+            'Stamina: $stamina, '
+            'Strength: $strength, '
+            'Jump Strength: $jumpStrength, '
+            'Flexibility: $flexibility, '
+            'Endurance: $endurance');
+      }
+    } else {
+      print('No statistics available.');
+    }
   }
 
   // Load idle animation
@@ -120,29 +183,29 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
     }
   }
 
-  // Load run left animation
-  Future<void> _loadRunLeftAnimation() async {
-    final animationData =
-        await fetchAnimationData(selectedCharacter, selectedGender, 'run_left');
-    if (animationData.isEmpty) {
-      print('Failed to load run_left animation.');
-      return;
-    }
-    try {
-      final spriteSheet = SpriteSheet(
-        image: await gameRef.images.load(animationData['file_path']),
-        srcSize: Vector2(128, 128), // Dimensions of each frame
-      );
-      runLeftAnimation = spriteSheet.createAnimation(
-        row: 0, // Row index in the sprite sheet
-        stepTime: 0.1, // Time per frame
-        from: animationData['start_frame'], // Start frame
-        to: animationData['end_frame'], // End frame
-      );
-    } catch (e) {
-      print('Error creating run_left animation: $e');
-    }
-  }
+  // // Load run left animation
+  // Future<void> _loadRunLeftAnimation() async {
+  //   final animationData =
+  //       await fetchAnimationData(selectedCharacter, selectedGender, 'run_left');
+  //   if (animationData.isEmpty) {
+  //     print('Failed to load run_left animation.');
+  //     return;
+  //   }
+  //   try {
+  //     final spriteSheet = SpriteSheet(
+  //       image: await gameRef.images.load(animationData['file_path']),
+  //       srcSize: Vector2(128, 128), // Dimensions of each frame
+  //     );
+  //     runLeftAnimation = spriteSheet.createAnimation(
+  //       row: 0, // Row index in the sprite sheet
+  //       stepTime: 0.1, // Time per frame
+  //       from: animationData['start_frame'], // Start frame
+  //       to: animationData['end_frame'], // End frame
+  //     );
+  //   } catch (e) {
+  //     print('Error creating run_left animation: $e');
+  //   }
+  // }
 
   // Load jump animation
   Future<void> _loadJumpAnimation() async {
@@ -199,55 +262,83 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
   }
 
   @override
-  void update(double dt) {
-    super.update(dt);
+void update(double dt) {
+  super.update(dt);
 
-    // Apply gravity
-    velocityY += gravity * dt;
+  // Apply gravity
+  velocityY += gravity * dt;
 
-    // Update vertical position based on velocity
-    position.y += velocityY * dt;
+  // Update vertical position based on velocity
+  position.y += velocityY * dt;
 
-   
-    // Handle animations
-    if (isAttacking && attackAnimation != null) {
-      // Prioritize attack animation
-      animation = attackAnimation;
-    } else if (!isOnGround && jumpAnimation != null) {
-      // Play jump animation if in the air
-      animation = jumpAnimation;
-    } else if (isOnGround) {
-      // Handle movement animations (idle/run)
-      if (isRunning) {
-        if (isFacingRight && runRightAnimation != null) {
-          animation = runRightAnimation;
-        } else if (!isFacingRight && runLeftAnimation != null) {
-          animation = runLeftAnimation;
-        }
-      } else if (idleAnimation != null) {
-        animation = idleAnimation;
+  // Handle animations
+  if (isAttacking && attackAnimation != null) {
+    // Prioritize attack animation above all others
+    animation = attackAnimation;
+    if (!isFacingRight && !isFlipped) {
+      // Flip the attack animation if facing left and not already flipped
+      flipHorizontallyAroundCenter();
+      isFlipped = true;
+    } else if (isFacingRight && isFlipped) {
+      // Unflip the attack animation if facing right and currently flipped
+      flipHorizontallyAroundCenter();
+      isFlipped = false;
+    }
+  } else if (!isOnGround && jumpAnimation != null) {
+    // Play jump animation if in the air
+    animation = jumpAnimation;
+    if (!isFacingRight && !isFlipped) {
+      // Flip the jump animation if facing left and not already flipped
+      flipHorizontallyAroundCenter();
+      isFlipped = true;
+    } else if (isFacingRight && isFlipped) {
+      // Unflip the jump animation if facing right and currently flipped
+      flipHorizontallyAroundCenter();
+      isFlipped = false;
+    }
+  } else if (isRunning) {
+    // Handle running animations
+    if (runRightAnimation != null) {
+      animation = runRightAnimation;
+      if (!isFacingRight && !isFlipped) {
+        // Flip the running animation if facing left and not already flipped
+        flipHorizontallyAroundCenter();
+        isFlipped = true;
+      } else if (isFacingRight && isFlipped) {
+        // Unflip the running animation if facing right and currently flipped
+        flipHorizontallyAroundCenter();
+        isFlipped = false;
       }
     }
-     // Check if the player is on the platform
-    if (position.y + height >= platform.y &&
-        position.x + width > platform.x &&
-        position.x < platform.x + platform.width) {
-      position.y = platform.y - height; // Snap to the platform
-      velocityY = 0; // Stop falling
-      isOnGround = true;
-      isJumping = false; // Allow jumping again
-    } else {
-      isOnGround = false;
-    }
-
-
-    // Prevent the player from going out of bounds horizontally
-    if (position.x < 0) {
-      position.x = 0;
-    } else if (position.x + width > Constants.screenWidth) {
-      position.x = Constants.screenWidth - width;
+  } else if (idleAnimation != null) {
+    // Default to idle animation
+    animation = idleAnimation;
+    if (isFlipped) {
+      // Unflip the character if currently flipped
+      flipHorizontallyAroundCenter();
+      isFlipped = false;
     }
   }
+
+  // Check if the player is on the platform
+  if (position.y + height >= platform.y &&
+      position.x + width > platform.x &&
+      position.x < platform.x + platform.width) {
+    position.y = platform.y - height; // Snap to the platform
+    velocityY = 0; // Stop falling
+    isOnGround = true;
+    isJumping = false; // Allow jumping again
+  } else {
+    isOnGround = false;
+  }
+
+  // Prevent the player from going out of bounds horizontally
+  if (position.x < 0) {
+    position.x = 0;
+  } else if (position.x + width > Constants.screenWidth) {
+    position.x = Constants.screenWidth - width;
+  }
+}
 
   void attack() {
     if (attackAnimation == null) {
@@ -268,8 +359,14 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
         isAttacking = false; // Reset attack state
         animationTicker?.onComplete = null; // Clear the callback
 
-        // Switch back to idle animation if on the ground
-        if (isOnGround && idleAnimation != null) {
+        // Reset flip state if facing left
+        if (!isFacingRight && isFlipped) {
+          flipHorizontallyAroundCenter();
+          isFlipped = false;
+        }
+
+        // Switch back to idle animation
+        if (idleAnimation != null) {
           animation = idleAnimation;
         }
       };
@@ -283,8 +380,14 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
           print('Fallback: Resetting isAttacking.'); // Debugging
           isAttacking = false;
 
-          // Switch back to idle animation if on the ground
-          if (isOnGround && idleAnimation != null) {
+          // Reset flip state if facing left
+          if (!isFacingRight && isFlipped) {
+            flipHorizontallyAroundCenter();
+            isFlipped = false;
+          }
+
+          // Switch back to idle animation
+          if (idleAnimation != null) {
             animation = idleAnimation;
           }
         }
@@ -294,19 +397,25 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
     }
   }
 
-  // Jump method
   void jump() {
-    if (isOnGround && !isJumping && !isAttacking) {
+    if (isOnGround && !isJumping) {
       // Apply upward velocity to simulate a jump
-      velocityY = -300; // Adjust this value based on your game's physics
+      velocityY = -jumpStrength * 2; // Use jumpStrength from statistics
       isJumping = true;
       print('Player jumped!');
+
+      // Reset flip state if facing left
+      if (!isFacingRight && isFlipped) {
+        flipHorizontallyAroundCenter();
+        isFlipped = false;
+      }
     }
   }
 
-  // Move method
   void move(Vector2 delta) {
-    if (delta.x != 0 && !isAttacking) {
+    if (delta.x != 0) {
+      final movementSpeed =
+          stamina * 0.1; // Use stamina from statistics to determine speed
       // Player is moving horizontally
       isRunning = true;
 
@@ -314,27 +423,16 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
       if (delta.x > 0) {
         // Moving right
         isFacingRight = true;
-        if (runRightAnimation != null && animation != runRightAnimation) {
-          animation = runRightAnimation;
-        }
       } else if (delta.x < 0) {
         // Moving left
         isFacingRight = false;
-        if (runLeftAnimation != null && animation != runLeftAnimation) {
-          animation = runLeftAnimation;
-        }
       }
 
       // Update the player's position based on joystick input
-      position.x += delta.x * speed;
+      position.x += delta.x * movementSpeed;
     } else {
       // Joystick is not being touched (no horizontal movement)
       isRunning = false;
-
-      // Switch back to idle animation when not moving and on the ground
-      if (isOnGround && idleAnimation != null && animation != idleAnimation) {
-        animation = idleAnimation;
-      }
     }
   }
 }
