@@ -9,7 +9,7 @@ final supabase = Supabase.instance.client;
 final user = supabase.auth.currentUser;
 final userid = user?.id;
 
-class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
+class Player extends SpriteAnimationComponent with HasGameRef {
   final Platform platform;
   final String selectedCharacter; // Name of the character (e.g., warrior)
   final String selectedGender; // Gender of the character (e.g., male)
@@ -262,83 +262,85 @@ class Player extends SpriteAnimationComponent with HasGameRef<LobbyWorld> {
   }
 
   @override
-void update(double dt) {
-  super.update(dt);
+  void update(double dt) {
+    super.update(dt);
 
-  // Apply gravity
-  velocityY += gravity * dt;
+    // Apply gravity
+    velocityY += gravity * dt;
 
-  // Update vertical position based on velocity
-  position.y += velocityY * dt;
+    // Update vertical position based on velocity
+    position.y += velocityY * dt;
 
-  // Handle animations
-  if (isAttacking && attackAnimation != null) {
-    // Prioritize attack animation above all others
-    animation = attackAnimation;
-    if (!isFacingRight && !isFlipped) {
-      // Flip the attack animation if facing left and not already flipped
-      flipHorizontallyAroundCenter();
-      isFlipped = true;
-    } else if (isFacingRight && isFlipped) {
-      // Unflip the attack animation if facing right and currently flipped
-      flipHorizontallyAroundCenter();
-      isFlipped = false;
-    }
-  } else if (!isOnGround && jumpAnimation != null) {
-    // Play jump animation if in the air
-    animation = jumpAnimation;
-    if (!isFacingRight && !isFlipped) {
-      // Flip the jump animation if facing left and not already flipped
-      flipHorizontallyAroundCenter();
-      isFlipped = true;
-    } else if (isFacingRight && isFlipped) {
-      // Unflip the jump animation if facing right and currently flipped
-      flipHorizontallyAroundCenter();
-      isFlipped = false;
-    }
-  } else if (isRunning) {
-    // Handle running animations
-    if (runRightAnimation != null) {
-      animation = runRightAnimation;
+    // Handle animations
+    if (isAttacking && attackAnimation != null) {
+      // Prioritize attack animation above all others
+      animation = attackAnimation;
       if (!isFacingRight && !isFlipped) {
-        // Flip the running animation if facing left and not already flipped
+        // Flip the attack animation if facing left and not already flipped
         flipHorizontallyAroundCenter();
         isFlipped = true;
       } else if (isFacingRight && isFlipped) {
-        // Unflip the running animation if facing right and currently flipped
+        // Unflip the attack animation if facing right and currently flipped
+        flipHorizontallyAroundCenter();
+        isFlipped = false;
+      }
+    } else if (!isOnGround && jumpAnimation != null) {
+      // Play jump animation if in the air
+      animation = jumpAnimation;
+      if (!isFacingRight && !isFlipped) {
+        // Flip the jump animation if facing left and not already flipped
+        flipHorizontallyAroundCenter();
+        isFlipped = true;
+      } else if (isFacingRight && isFlipped) {
+        // Unflip the jump animation if facing right and currently flipped
+        flipHorizontallyAroundCenter();
+        isFlipped = false;
+      }
+    } else if (isRunning) {
+      // Handle running animations
+      if (runRightAnimation != null) {
+        animation = runRightAnimation;
+        if (!isFacingRight && !isFlipped) {
+          // Flip the running animation if facing left and not already flipped
+          flipHorizontallyAroundCenter();
+          isFlipped = true;
+        } else if (isFacingRight && isFlipped) {
+          // Unflip the running animation if facing right and currently flipped
+          flipHorizontallyAroundCenter();
+          isFlipped = false;
+        }
+      }
+    } else if (idleAnimation != null) {
+      // Default to idle animation
+      animation = idleAnimation;
+      if (isFlipped) {
+        // Unflip the character if currently flipped
         flipHorizontallyAroundCenter();
         isFlipped = false;
       }
     }
-  } else if (idleAnimation != null) {
-    // Default to idle animation
-    animation = idleAnimation;
-    if (isFlipped) {
-      // Unflip the character if currently flipped
-      flipHorizontallyAroundCenter();
-      isFlipped = false;
+
+    // Check if the player is on the platform
+    if (position.y + height >= platform.y &&
+        position.x + width > platform.x &&
+        position.x < platform.x + platform.width) {
+      position.y = platform.y - height; // Snap to the platform
+      velocityY = 0; // Stop falling
+      isOnGround = true;
+      isJumping = false; // Allow jumping again
+    } else {
+      isOnGround = false;
+    }
+
+    // Endless loop logic
+    if (position.x > Constants.screenWidth) {
+      // Player has moved past the right boundary
+      position.x = 0 - width; // Teleport to the left side
+    } else if (position.x + width < 0) {
+      // Player has moved past the left boundary
+      position.x = Constants.screenWidth; // Teleport to the right side
     }
   }
-
-  // Check if the player is on the platform
-  if (position.y + height >= platform.y &&
-      position.x + width > platform.x &&
-      position.x < platform.x + platform.width) {
-    position.y = platform.y - height; // Snap to the platform
-    velocityY = 0; // Stop falling
-    isOnGround = true;
-    isJumping = false; // Allow jumping again
-  } else {
-    isOnGround = false;
-  }
-
-  // Prevent the player from going out of bounds horizontally
-  if (position.x < 0) {
-    position.x = 0;
-  } else if (position.x + width > Constants.screenWidth) {
-    position.x = Constants.screenWidth - width;
-  }
-}
 
   void attack() {
     if (attackAnimation == null) {
@@ -351,11 +353,9 @@ void update(double dt) {
       animation = attackAnimation; // Set the attack animation
 
       // Debugging: Verify the animation is set
-      print('Attack animation set: ${animation?.frames.length} frames');
 
       // Use the onComplete callback of the SpriteAnimationTicker
       animationTicker?.onComplete = () {
-        print('Attack animation completed.'); // Debugging
         isAttacking = false; // Reset attack state
         animationTicker?.onComplete = null; // Clear the callback
 
@@ -377,7 +377,6 @@ void update(double dt) {
       Future.delayed(Duration(milliseconds: (attackDuration * 1000).toInt()),
           () {
         if (isAttacking) {
-          print('Fallback: Resetting isAttacking.'); // Debugging
           isAttacking = false;
 
           // Reset flip state if facing left
@@ -392,8 +391,6 @@ void update(double dt) {
           }
         }
       });
-
-      print('Player is attacking!');
     }
   }
 
@@ -402,7 +399,6 @@ void update(double dt) {
       // Apply upward velocity to simulate a jump
       velocityY = -jumpStrength * 2; // Use jumpStrength from statistics
       isJumping = true;
-      print('Player jumped!');
 
       // Reset flip state if facing left
       if (!isFacingRight && isFlipped) {

@@ -1,25 +1,35 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'constants.dart';
 
-class Platform extends PositionComponent {
+class Platform extends PositionComponent with CollisionCallbacks {
   final double screenWidth;
-  final double platformHeight = 20; // Instance member
+  final double platformHeight = 20;
+  bool debugVisible = false; // Set to true to see platform during development
 
-  Platform(this.screenWidth) : super(); // Remove the size from the initializer
+  Platform(this.screenWidth);
 
   @override
   Future<void> onLoad() async {
-    // Set the size dynamically in onLoad
-    size = Vector2(screenWidth, platformHeight);
+    await super.onLoad();
 
-    // Position the platform at the bottom of the screen
+    // Set platform dimensions and position
+    size = Vector2(screenWidth + 100, platformHeight);
     position = Vector2(0, Constants.screenHeight * 0.8 - platformHeight);
 
-    // Add a brown rectangle to represent the platform
-    add(RectangleComponent(
+    // Add visual representation (only visible if debugVisible is true)
+    if (debugVisible) {
+      add(RectangleComponent(
+        size: size,
+        paint: Paint()..color = const Color.fromARGB(255, 139, 69, 19), // Brown
+      ));
+    }
+
+    // Add collision hitbox (always present)
+    add(RectangleHitbox(
       size: size,
-      paint: Paint()..color = const Color.fromARGB(0, 139, 69, 19), // Brown color
-    ));
+      isSolid: true,
+    )..debugMode = debugVisible);
   }
 }

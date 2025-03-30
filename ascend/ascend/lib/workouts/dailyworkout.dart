@@ -90,7 +90,7 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
       ),
       body: Container(
         color: Color.fromARGB(255, 0, 43, 79),
-        child: FutureBuilder<List<Map<String, dynamic>>>(
+        child: FutureBuilder<List<Map<String, dynamic>>?>(
           future: fetchRemainingExercises(userId, today),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -107,233 +107,249 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                       fontWeight: FontWeight.bold),
                 ),
               );
-            } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-              // Handle rest day
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Today is a rest day.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Taking rest is essential for growth!',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 18,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Enjoy your rest day!'),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Color.fromARGB(255, 0, 43, 79),
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        'Rest Day',
+            } else if (snapshot.hasData) {
+              final remainingExercises = snapshot.data;
+
+              // Check if today is a rest day
+              if (remainingExercises == null) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Today is a rest day.',
                         style: TextStyle(
-                          fontSize: 20,
+                          color: Colors.white,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-              final remainingExercises = snapshot.data!;
-
-              return Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: remainingExercises.length,
-                      itemBuilder: (context, index) {
-                        final exercise = remainingExercises[index];
-                        return ListTile(
-                          title: Text(
-                            exercise['exercise'] ?? 'Unknown Exercise',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
+                      SizedBox(height: 10),
+                      Text(
+                        'Taking rest is essential for growth!',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 18,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Enjoy your rest day!'),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Color.fromARGB(255, 0, 43, 79),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          subtitle: Text(
-                            'Sets: ${exercise['sets'] ?? 0}, Reps: ${exercise['reps'] ?? 0}',
-                            style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 16),
+                        ),
+                        child: Text(
+                          'Rest Day',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                          tileColor: Color.fromARGB(255, 0, 43, 79),
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 10),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (remainingExercises.isNotEmpty) {
-                          // Start the first remaining exercise
-                          final firstExercise = remainingExercises.first;
-                          final exerciseName =
-                              firstExercise['exercise'] ?? 'Unknown Exercise';
-                          final sets = firstExercise['sets'] ?? 0;
-                          final reps = firstExercise['reps'] ?? 0;
+                );
+              } else if (remainingExercises.isEmpty) {
+                // All exercises completed for today
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'All exercises completed for today!',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          try {
+                            // Fetch completed exercises
+                            final response = await Supabase.instance.client
+                                .from('workout_schedule')
+                                .select('exercises, completed_exercises')
+                                .eq('user_id', userId)
+                                .eq('day_of_week', today)
+                                .single();
 
-                          final exercisePageBuilder =
-                              exercisePageMap[exerciseName];
-                          if (exercisePageBuilder != null) {
+                            final todaysExercises =
+                                List<Map<String, dynamic>>.from(
+                                    response['exercises']);
+                            final completedExercises = List<String>.from(
+                                response['completed_exercises'][today] ?? []);
+
+                            // Filter completed exercises
+                            final completedExerciseDetails = todaysExercises
+                                .where((exercise) => completedExercises
+                                    .contains(exercise['exercise']))
+                                .toList();
+
+                            // Fetch stats gained
+                            final statsResponse = await Supabase.instance.client
+                                .from('statistics')
+                                .select('*')
+                                .eq('user_id', userId)
+                                .single();
+
+                            final Map<String, dynamic> stats =
+                                Map<String, dynamic>.from(statsResponse);
+
+                            final Map<String, int> statsGained = {
+                              'strength': stats['strength'] ?? 0,
+                              'stamina': stats['stamina'] ?? 0,
+                              'jump_strength': stats['jump_strength'] ?? 0,
+                              'flexibility': stats['flexibility'] ?? 0,
+                              'endurance': stats['endurance'] ?? 0,
+                            };
+
+                            // Navigate to the feedback page
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    exercisePageBuilder(context),
+                                builder: (context) => FeedbackPage(
+                                  completedExercises: completedExerciseDetails,
+                                  statsGainedPerExercise:
+                                      _calculateStatsPerExercise(
+                                          completedExerciseDetails),
+                                ),
                               ),
-                            ).then((result) async {
-                              if (result == true) {
-                                await markExerciseAsCompleted(
-                                    userId, today, exerciseName, reps);
-                                setState(() {}); // Refresh the UI
-                              }
-                            });
-                          } else {
+                            );
+                          } catch (e) {
+                            print(
+                                'Error fetching completed exercises or stats: $e');
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                    'Exercise "$exerciseName" is not implemented yet.'),
+                                    'Error loading feedback. Please try again later.'),
                               ),
                             );
                           }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Color.fromARGB(255, 0, 43, 79),
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Color.fromARGB(255, 0, 43, 79),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
+                        ),
+                        child: Text(
+                          'View Feedback',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      child: Text(
-                        'Start Workout',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
-              );
-            } else {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                );
+              } else {
+                // Exercises remaining for today
+                return Column(
                   children: [
-                    Text(
-                      'All exercises completed for today!',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          // Fetch completed exercises
-                          final response = await Supabase.instance.client
-                              .from('workout_schedule')
-                              .select('exercises, completed_exercises')
-                              .eq('user_id', userId)
-                              .eq('day_of_week', today)
-                              .single();
-
-                          final todaysExercises =
-                              List<Map<String, dynamic>>.from(
-                                  response['exercises']);
-                          final completedExercises = List<String>.from(
-                              response['completed_exercises'][today] ?? []);
-
-                          // Filter completed exercises
-                          final completedExerciseDetails = todaysExercises
-                              .where((exercise) => completedExercises
-                                  .contains(exercise['exercise']))
-                              .toList();
-
-                          // Fetch stats gained
-                          final statsResponse = await Supabase.instance.client
-                              .from('statistics')
-                              .select('*')
-                              .eq('user_id', userId)
-                              .single();
-
-                          final Map<String, dynamic> stats =
-                              Map<String, dynamic>.from(statsResponse);
-
-                          final Map<String, int> statsGained = {
-                            'strength': stats['strength'] ?? 0,
-                            'stamina': stats['stamina'] ?? 0,
-                            'jump_strength': stats['jump_strength'] ?? 0,
-                            'flexibility': stats['flexibility'] ?? 0,
-                            'endurance': stats['endurance'] ?? 0,
-                          };
-
-                          // Navigate to the feedback page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FeedbackPage(
-                                completedExercises: completedExerciseDetails,
-                                statsGainedPerExercise:
-                                    _calculateStatsPerExercise(
-                                        completedExerciseDetails),
-                              ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: remainingExercises.length,
+                        itemBuilder: (context, index) {
+                          final exercise = remainingExercises[index];
+                          return ListTile(
+                            title: Text(
+                              exercise['exercise'] ?? 'Unknown Exercise',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold),
                             ),
-                          );
-                        } catch (e) {
-                          print(
-                              'Error fetching completed exercises or stats: $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Error loading feedback. Please try again later.'),
+                            subtitle: Text(
+                              'Sets: ${exercise['sets'] ?? 0}, Reps: ${exercise['reps'] ?? 0}',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 16),
                             ),
+                            tileColor: Color.fromARGB(255, 0, 43, 79),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10),
                           );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Color.fromARGB(255, 0, 43, 79),
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        },
                       ),
-                      child: Text(
-                        'View Feedback',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (remainingExercises.isNotEmpty) {
+                            // Start the first remaining exercise
+                            final firstExercise = remainingExercises.first;
+                            final exerciseName =
+                                firstExercise['exercise'] ?? 'Unknown Exercise';
+                            final sets = firstExercise['sets'] ?? 0;
+                            final reps = firstExercise['reps'] ?? 0;
+                            print(
+                                'Starting exercise: $exerciseName for user: $userId on $today');
+                            final exercisePageBuilder =
+                                exercisePageMap[exerciseName];
+                            if (exercisePageBuilder != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      exercisePageBuilder(context),
+                                ),
+                              ).then((result) async {
+                                if (result == true) {
+                                  print('Exercise completed: $exerciseName');
+                                  await markExerciseAsCompleted(
+                                      userId, today, exerciseName, reps);
+                                  setState(() {}); // Refresh the UI
+                                }
+                              });
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Exercise "$exerciseName" is not implemented yet.'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Color.fromARGB(255, 0, 43, 79),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 15),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(
+                          'Start Workout',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ],
+                );
+              }
+            } else {
+              return Center(
+                child: Text(
+                  'No data found.',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold),
                 ),
               );
             }
@@ -344,10 +360,12 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
   }
 }
 
-// Function to mark an exercise as completed
 Future<void> markExerciseAsCompleted(
     String userId, String dayOfWeek, String exerciseName, int reps) async {
   try {
+    print(
+        'Marking exercise as completed: $exerciseName for user: $userId on $dayOfWeek');
+
     // Fetch the current completed_exercises for the user
     final response = await Supabase.instance.client
         .from('workout_schedule')
@@ -360,23 +378,30 @@ Future<void> markExerciseAsCompleted(
       return;
     }
 
+    // Parse the completed_exercises JSONB column
     Map<String, dynamic> completedExercises =
         Map<String, dynamic>.from(response.first['completed_exercises'] ?? {});
 
+    print('Fetched completed_exercises: $completedExercises');
+
     // Update the completed exercises for the specific day
-    List<String> completedToday =
-        List<String>.from(completedExercises[dayOfWeek] ?? []);
+    List<dynamic> completedToday =
+        List<dynamic>.from(completedExercises[dayOfWeek] ?? []);
     if (!completedToday.contains(exerciseName)) {
       completedToday.add(exerciseName);
     }
     completedExercises[dayOfWeek] = completedToday;
 
+    print('Updated completed_exercises: $completedExercises');
+
     // Update the database
-    await Supabase.instance.client
+    final updateResponse = await Supabase.instance.client
         .from('workout_schedule')
         .update({'completed_exercises': completedExercises})
         .eq('user_id', userId)
         .eq('day_of_week', dayOfWeek);
+
+    print('Update response: $updateResponse');
 
     print('Successfully marked exercise as completed: $exerciseName');
 
@@ -477,7 +502,7 @@ Future<void> resetWeeklyProgress(String userId) async {
 }
 
 // Function to fetch remaining exercises for the day
-Future<List<Map<String, dynamic>>> fetchRemainingExercises(
+Future<List<Map<String, dynamic>>?> fetchRemainingExercises(
     String userId, String dayOfWeek) async {
   try {
     // Fetch the user's workout schedule
@@ -495,10 +520,9 @@ Future<List<Map<String, dynamic>>> fetchRemainingExercises(
         List.from(completedExercises[dayOfWeek] ?? []);
 
     // Check if today is a rest day
-    if (todaysExercises.isEmpty ||
-        (todaysExercises.length == 1 &&
-            todaysExercises.first['exercise'] == 'Rest')) {
-      return []; // Return an empty list for rest days
+    if (todaysExercises.isNotEmpty &&
+        todaysExercises.first['exercise'] == 'Rest') {
+      return null; // Return null for rest day
     }
 
     // Filter out completed exercises

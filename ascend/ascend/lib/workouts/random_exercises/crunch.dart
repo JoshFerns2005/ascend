@@ -4,7 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // For formatting the current day
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class CrunchPage extends StatelessWidget {
+class CrunchPage extends StatefulWidget {
+  @override
+  _CrunchPageState createState() => _CrunchPageState();
+}
+
+class _CrunchPageState extends State<CrunchPage> {
+  bool exerciseCompleted = false; // Track if the exercise is completed
   final String exerciseName = "Crunches"; // Name of the exercise
 
   @override
@@ -52,8 +58,13 @@ class CrunchPage extends StatelessWidget {
                       exerciseName: exerciseName, // Pass the exercise name
                       sets: sets, // Dynamically fetched sets
                       reps: reps, // Dynamically fetched reps
-                      onExerciseCompleted: () {
-                        Navigator.pop(context);
+                    onExerciseCompleted: () {
+                        // Mark the exercise as completed
+                        setState(() {
+                          exerciseCompleted = true;
+                        });
+                        // Navigate back and pass the completion status
+                        Navigator.pop(context, exerciseCompleted);
                       },
                     ),
                   ),
