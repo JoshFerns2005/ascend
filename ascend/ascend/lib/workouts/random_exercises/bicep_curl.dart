@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-
 class BicepCurlPage extends StatefulWidget {
   @override
   _BicepCurlState createState() => _BicepCurlState();
@@ -23,7 +22,12 @@ class _BicepCurlState extends State<BicepCurlPage> {
     final today = DateFormat('EEEE').format(DateTime.now());
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bicep Curl Pose Detector'),
+        title: Text(
+          'Bicep Curl Pose Detector',
+          style: TextStyle(
+            fontSize: MediaQuery.of(context).size.width * 0.05, // Responsive font size
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -32,13 +36,18 @@ class _BicepCurlState extends State<BicepCurlPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                strokeWidth: MediaQuery.of(context).size.width * 0.01, // Responsive stroke width
+              ),
             );
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
                 'Error loading exercise details',
-                style: TextStyle(fontSize: 18, color: Colors.red),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
+                  color: Colors.red,
+                ),
               ),
             );
           } else if (snapshot.hasData && snapshot.data != null) {
@@ -47,7 +56,9 @@ class _BicepCurlState extends State<BicepCurlPage> {
             final reps = exerciseDetails['reps'] ?? 20; // Default to 20 reps
 
             return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.04, // Responsive padding
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -57,7 +68,7 @@ class _BicepCurlState extends State<BicepCurlPage> {
                       exerciseName: exerciseName, // Pass the exercise name
                       sets: sets, // Dynamically fetched sets
                       reps: reps, // Dynamically fetched reps
-                     onExerciseCompleted: () {
+                      onExerciseCompleted: () {
                         // Mark the exercise as completed
                         setState(() {
                           exerciseCompleted = true;
@@ -67,7 +78,7 @@ class _BicepCurlState extends State<BicepCurlPage> {
                       },
                     ),
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.02), // Responsive spacing
                 ],
               ),
             );
@@ -75,7 +86,10 @@ class _BicepCurlState extends State<BicepCurlPage> {
             return Center(
               child: Text(
                 'No exercise details found for today',
-                style: TextStyle(fontSize: 18, color: Colors.red),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
+                  color: Colors.red,
+                ),
               ),
             );
           }

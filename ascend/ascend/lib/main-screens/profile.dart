@@ -15,6 +15,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? weight;
   String? height;
   String? age;
+  String? gender;
   String? currentPhysique;
   String? idealPhysique;
   String? bmi;
@@ -39,6 +40,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             weight = response['weight']?.toString();
             height = response['height']?.toString();
             age = response['age']?.toString();
+            gender = response['gender']?.toString();
+
             currentPhysique = response['current_physique']?.toString();
             idealPhysique = response['ideal_physique']?.toString();
             bmi = response['bmi']?.toString();
@@ -49,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             weight = null;
             height = null;
             age = null;
+            gender = null;
             currentPhysique = null;
             idealPhysique = null;
             bmi = null;
@@ -85,6 +89,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'weight': weight,
           'height': height,
           'age': age,
+          'gender': gender,
           'current_physique': currentPhysique,
           'ideal_physique': idealPhysique,
           'bmi': bmi,
@@ -121,56 +126,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Color.fromARGB(200, 0, 43, 79),
-
       body: user == null
-          ? Center(child: Text('No user data available. Please log in.',style: TextStyle(color: Colors.white),))
+          ? Center(
+              child: Text(
+                'No user data available. Please log in.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: MediaQuery.of(context).size.width *
+                      0.045, // Responsive font size
+                ),
+              ),
+            )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width *
+                  0.04), // Responsive padding
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: 50),
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.05), // Responsive spacing
                   // Profile Picture
                   if (profileImageUrl != null)
                     ClipOval(
                       child: Image.network(
                         profileImageUrl,
-                        width: 100,
-                        height: 100,
+                        width: MediaQuery.of(context).size.width *
+                            0.3, // Responsive width
+                        height: MediaQuery.of(context).size.width *
+                            0.3, // Responsive height
                         fit: BoxFit.cover,
                       ),
                     ),
-                  const SizedBox(height: 16),
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.02), // Responsive spacing
                   // Full Name
                   Text(
                     fullName ?? 'Unknown Name',
-                    style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold,fontSize: 30)// Theme.of(context).textTheme.headlineMedium,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: MediaQuery.of(context).size.width *
+                          0.08, // Responsive font size
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.01), // Responsive spacing
                   // Email
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.email, color: Colors.white),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.email,
+                        color: Colors.white,
+                        size: MediaQuery.of(context).size.width *
+                            0.06, // Responsive icon size
+                      ),
+                      SizedBox(
+                          width: MediaQuery.of(context).size.width *
+                              0.02), // Responsive spacing
                       Text(
                         email ?? 'Unknown Email',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width *
+                              0.04, // Responsive font size
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  // User Details
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.04), // User Details
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    padding: EdgeInsets.all(20),
+                    width: MediaQuery.of(context).size.width *
+                        0.8, // Responsive width
+                    padding: EdgeInsets.all(MediaQuery.of(context).size.width *
+                        0.04), // Responsive padding
                     decoration: BoxDecoration(
                       color: Color.fromARGB(255, 0, 43, 79),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width *
+                              0.03), // Responsive border radius
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black12,
-                          blurRadius: 10,
+                          blurRadius: MediaQuery.of(context).size.width *
+                              0.02, // Responsive blur radius
                         ),
                       ],
                     ),
@@ -184,22 +228,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Text(
                                   'Edit Your Details',
                                   style: TextStyle(
-                                    fontSize: 22,
+                                    fontSize:
+                                        MediaQuery.of(context).size.width *
+                                            0.055, // Responsive font size
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blueGrey,
                                   ),
                                 ),
-                                SizedBox(height: 20),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.02), // Responsive spacing
                                 // Weight input
                                 TextFormField(
                                   initialValue: weight,
                                   decoration: InputDecoration(
                                     labelText: 'Weight (kg)',
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          MediaQuery.of(context).size.width *
+                                              0.02), // Responsive border radius
                                     ),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 16),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal:
+                                          MediaQuery.of(context).size.width *
+                                              0.03, // Responsive padding
+                                    ),
                                   ),
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) => weight = value,
@@ -208,17 +261,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ? 'Please enter your weight'
                                           : null,
                                 ),
-                                SizedBox(height: 16),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.02), // Responsive spacing
                                 // Height input
                                 TextFormField(
                                   initialValue: height,
                                   decoration: InputDecoration(
                                     labelText: 'Height (cm)',
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          MediaQuery.of(context).size.width *
+                                              0.02), // Responsive border radius
                                     ),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 16),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal:
+                                          MediaQuery.of(context).size.width *
+                                              0.03, // Responsive padding
+                                    ),
                                   ),
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) => height = value,
@@ -227,17 +287,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ? 'Please enter your height'
                                           : null,
                                 ),
-                                SizedBox(height: 16),
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.02), // Responsive spacing
                                 // Age input
                                 TextFormField(
                                   initialValue: age,
                                   decoration: InputDecoration(
                                     labelText: 'Age',
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          MediaQuery.of(context).size.width *
+                                              0.02), // Responsive border radius
                                     ),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 16),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal:
+                                          MediaQuery.of(context).size.width *
+                                              0.03, // Responsive padding
+                                    ),
                                   ),
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) => age = value,
@@ -246,22 +313,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ? 'Please enter your age'
                                           : null,
                                 ),
-                                SizedBox(height: 16),
-                                // Current Physique Dropdown
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.02), // Current Physique Dropdown
                                 DropdownButtonFormField<String>(
                                   value: currentPhysique,
                                   decoration: InputDecoration(
                                     labelText: 'Current Physique',
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          MediaQuery.of(context).size.width *
+                                              0.02), // Responsive border radius
                                     ),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 16),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal:
+                                          MediaQuery.of(context).size.width *
+                                              0.03, // Responsive padding
+                                    ),
                                   ),
                                   items: ['Lean', 'Muscular', 'Bulk']
                                       .map((e) => DropdownMenuItem(
                                             value: e,
-                                            child: Text(e),
+                                            child: Text(
+                                              e,
+                                              style: TextStyle(
+                                                fontSize: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.04, // Responsive font size
+                                              ),
+                                            ),
                                           ))
                                       .toList(),
                                   onChanged: (value) =>
@@ -271,22 +352,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ? 'Please select your current physique'
                                       : null,
                                 ),
-                                SizedBox(height: 16),
-                                // Ideal Physique Dropdown
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.02), // Responsive spacing
+// Ideal Physique Dropdown
                                 DropdownButtonFormField<String>(
                                   value: idealPhysique,
                                   decoration: InputDecoration(
                                     labelText: 'Ideal Physique',
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          MediaQuery.of(context).size.width *
+                                              0.02), // Responsive border radius
                                     ),
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 16),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal:
+                                          MediaQuery.of(context).size.width *
+                                              0.03, // Responsive padding
+                                    ),
                                   ),
                                   items: ['Lean', 'Muscular', 'Bulk']
                                       .map((e) => DropdownMenuItem(
                                             value: e,
-                                            child: Text(e),
+                                            child: Text(
+                                              e,
+                                              style: TextStyle(
+                                                fontSize: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.04, // Responsive font size
+                                              ),
+                                            ),
                                           ))
                                       .toList(),
                                   onChanged: (value) =>
@@ -296,8 +392,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ? 'Please select your ideal physique'
                                           : null,
                                 ),
-                                SizedBox(height: 24),
-                                // Save and Cancel Buttons
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.03), // Responsive spacing
+// Save and Cancel Buttons
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
@@ -308,10 +406,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           updateUserDetails();
                                         }
                                       },
-                                      child: Text('Save'),
+                                      child: Text(
+                                        'Save',
+                                        style: TextStyle(
+                                          fontSize: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.04, // Responsive font size
+                                        ),
+                                      ),
                                       style: ElevatedButton.styleFrom(
                                         padding: EdgeInsets.symmetric(
-                                            horizontal: 32, vertical: 12),
+                                          horizontal: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.08, // Responsive padding
+                                          vertical: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                              0.015, // Responsive padding
+                                        ),
                                       ),
                                     ),
                                     ElevatedButton(
@@ -320,10 +434,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           isEditing = false;
                                         });
                                       },
-                                      child: Text('Cancel'),
+                                      child: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          fontSize: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.04, // Responsive font size
+                                        ),
+                                      ),
                                       style: ElevatedButton.styleFrom(
                                         padding: EdgeInsets.symmetric(
-                                            horizontal: 32, vertical: 12),
+                                          horizontal: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.08, // Responsive padding
+                                          vertical: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                              0.015, // Responsive padding
+                                        ),
                                         backgroundColor: Colors.grey,
                                       ),
                                     ),
@@ -338,37 +468,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Text(
                                 'Weight: $weight kg',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               Text(
                                 'Height: $height cm',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               Text(
                                 'Age: $age',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
+                              ),
+                              Text(
+                                'Gender: $gender',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               Text(
                                 'Current Physique: $currentPhysique',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               Text(
                                 'Ideal Physique: $idealPhysique',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               Text(
                                 'BMI: $bmi',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               Text(
                                 'Category: $bmi_category',
                                 style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w500,color: Colors.white),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white),
                               ),
                               SizedBox(height: 16),
                               Center(

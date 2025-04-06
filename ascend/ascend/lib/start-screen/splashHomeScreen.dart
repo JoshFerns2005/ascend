@@ -15,32 +15,32 @@ class Splashhomescreen extends StatelessWidget {
               children: [
                 Image.asset(
                   'assets/images/Ascend.png',
-                  height: 300,
-                  width: 300,
+                  height: MediaQuery.of(context).size.width * 0.6, // Responsive image height
+                  width: MediaQuery.of(context).size.width * 0.6, // Responsive image width
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.02), // Responsive spacing
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 30.0), // Added horizontal padding
+                  padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.1), // Responsive horizontal padding
                   child: Text.rich(
                     TextSpan(
                       text: 'Push boundaries,\n',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: MediaQuery.of(context).size.width * 0.06, // Responsive font size
                         color: Color.fromARGB(255, 255, 255, 255),
                       ),
                       children: [
                         TextSpan(
                           text: 'achieve greatness,\n',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: MediaQuery.of(context).size.width * 0.06, // Responsive font size
                             color: Color.fromARGB(255, 255, 255, 255),
                           ),
                         ),
                         TextSpan(
                           text: 'Ascend.',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: MediaQuery.of(context).size.width * 0.06, // Responsive font size
                             fontWeight: FontWeight.bold,
                             color: Color.fromARGB(255, 255, 255, 255),
                           ),
@@ -50,17 +50,18 @@ class Splashhomescreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                SizedBox(height: 50),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05), // Responsive spacing
                 Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
+                  padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.01), // Responsive top padding
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(189, 14, 52, 104), // Button color
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 120, vertical: 15),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width * 0.2, // Responsive horizontal padding
+                        vertical: MediaQuery.of(context).size.height * 0.02, // Responsive vertical padding
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(90), // Rounded corners
+                        borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05), // Responsive border radius
                       ),
                     ),
                     onPressed: () {
@@ -74,7 +75,7 @@ class Splashhomescreen extends StatelessWidget {
                       'Welcome',
                       style: TextStyle(
                         color: Color.fromARGB(255, 255, 255, 255), // Text color
-                        fontSize: 18,
+                        fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
                         fontWeight: FontWeight.bold,
                       ),
                     ),

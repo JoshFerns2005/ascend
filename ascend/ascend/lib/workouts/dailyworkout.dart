@@ -95,16 +95,93 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: MediaQuery.of(context).size.width *
+                      0.01, // Responsive stroke width
+                ),
+              );
+            } else if (snapshot.data == null) {
+              // Explicitly handle the rest day case
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Today is a rest day.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: MediaQuery.of(context).size.width *
+                            0.06, // Responsive font size
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(
+                        height: MediaQuery.of(context).size.height *
+                            0.02), // Responsive spacing
+                    Text(
+                      'Taking rest is essential for growth!',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: MediaQuery.of(context).size.width *
+                            0.045, // Responsive font size
+                      ),
+                    ),
+                    SizedBox(
+                        height: MediaQuery.of(context).size.height *
+                            0.04), // Responsive spacing
+                    ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Enjoy your rest day!'),
+                            backgroundColor: const Color.fromARGB(255, 134, 134, 134).withOpacity(0.9),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  MediaQuery.of(context).size.width *
+                                      0.02), // Responsive border radius
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Color.fromARGB(255, 0, 43, 79),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width *
+                              0.1, // Responsive horizontal padding
+                          vertical: MediaQuery.of(context).size.height *
+                              0.02, // Responsive vertical padding
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              MediaQuery.of(context).size.width *
+                                  0.02), // Responsive border radius
+                        ),
+                      ),
+                      child: Text(
+                        'Rest Day',
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width *
+                              0.05, // Responsive font size
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               );
             } else if (snapshot.hasError) {
               return Center(
                 child: Text(
                   'Error loading schedule',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: MediaQuery.of(context).size.width *
+                        0.06, // Responsive font size
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               );
             } else if (snapshot.hasData) {
@@ -120,24 +197,37 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                         'Today is a rest day.',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: MediaQuery.of(context).size.width *
+                              0.06, // Responsive font size
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height *
+                              0.02), // Responsive spacing
                       Text(
                         'Taking rest is essential for growth!',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
-                          fontSize: 18,
+                          fontSize: MediaQuery.of(context).size.width *
+                              0.045, // Responsive font size
                         ),
                       ),
-                      SizedBox(height: 20),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height *
+                              0.04), // Responsive spacing
                       ElevatedButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Enjoy your rest day!'),
+                              backgroundColor: Colors.white.withOpacity(0.9),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width *
+                                        0.02), // Responsive border radius
+                              ),
                             ),
                           );
                         },
@@ -145,15 +235,22 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                           backgroundColor: Colors.white,
                           foregroundColor: Color.fromARGB(255, 0, 43, 79),
                           padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
+                            horizontal: MediaQuery.of(context).size.width *
+                                0.1, // Responsive horizontal padding
+                            vertical: MediaQuery.of(context).size.height *
+                                0.02, // Responsive vertical padding
+                          ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width *
+                                    0.02), // Responsive border radius
                           ),
                         ),
                         child: Text(
                           'Rest Day',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: MediaQuery.of(context).size.width *
+                                0.05, // Responsive font size
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -170,11 +267,15 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                       Text(
                         'All exercises completed for today!',
                         style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: MediaQuery.of(context).size.width *
+                              0.06, // Responsive font size
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      SizedBox(height: 20),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height *
+                              0.04), // Responsive spacing
                       ElevatedButton(
                         onPressed: () async {
                           try {
@@ -235,6 +336,13 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                               SnackBar(
                                 content: Text(
                                     'Error loading feedback. Please try again later.'),
+                                backgroundColor: Colors.red.withOpacity(0.9),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      MediaQuery.of(context).size.width *
+                                          0.02), // Responsive border radius
+                                ),
                               ),
                             );
                           }
@@ -243,12 +351,24 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                           backgroundColor: Colors.white,
                           foregroundColor: Color.fromARGB(255, 0, 43, 79),
                           padding: EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 10),
+                            horizontal: MediaQuery.of(context).size.width *
+                                0.1, // Responsive horizontal padding
+                            vertical: MediaQuery.of(context).size.height *
+                                0.02, // Responsive vertical padding
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width *
+                                    0.02), // Responsive border radius
+                          ),
                         ),
                         child: Text(
                           'View Feedback',
                           style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                            fontSize: MediaQuery.of(context).size.width *
+                                0.045, // Responsive font size
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -267,25 +387,35 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                             title: Text(
                               exercise['exercise'] ?? 'Unknown Exercise',
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: MediaQuery.of(context).size.width *
+                                    0.045, // Responsive font size
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Text(
                               'Sets: ${exercise['sets'] ?? 0}, Reps: ${exercise['reps'] ?? 0}',
                               style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 16),
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: MediaQuery.of(context).size.width *
+                                    0.04, // Responsive font size
+                              ),
                             ),
                             tileColor: Color.fromARGB(255, 0, 43, 79),
                             contentPadding: EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
+                              horizontal: MediaQuery.of(context).size.width *
+                                  0.05, // Responsive padding
+                              vertical: MediaQuery.of(context).size.height *
+                                  0.01, // Responsive padding
+                            ),
                           );
                         },
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: EdgeInsets.all(
+                          MediaQuery.of(context).size.width *
+                              0.05), // Responsive padding
                       child: ElevatedButton(
                         onPressed: () async {
                           if (remainingExercises.isNotEmpty) {
@@ -319,6 +449,13 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                                 SnackBar(
                                   content: Text(
                                       'Exercise "$exerciseName" is not implemented yet.'),
+                                  backgroundColor: Colors.red.withOpacity(0.9),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        MediaQuery.of(context).size.width *
+                                            0.02), // Responsive border radius
+                                  ),
                                 ),
                               );
                             }
@@ -328,14 +465,24 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                           backgroundColor: Colors.white,
                           foregroundColor: Color.fromARGB(255, 0, 43, 79),
                           padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
+                            horizontal: MediaQuery.of(context).size.width *
+                                0.1, // Responsive horizontal padding
+                            vertical: MediaQuery.of(context).size.height *
+                                0.02, // Responsive vertical padding
+                          ),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width *
+                                    0.02), // Responsive border radius
+                          ),
                         ),
                         child: Text(
                           'Start Workout',
                           style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
+                            fontSize: MediaQuery.of(context).size.width *
+                                0.05, // Responsive font size
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -347,9 +494,11 @@ class _DailyWorkoutPageState extends State<DailyWorkoutPage> {
                 child: Text(
                   'No data found.',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: MediaQuery.of(context).size.width *
+                        0.06, // Responsive font size
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               );
             }

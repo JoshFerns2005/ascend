@@ -17,7 +17,7 @@ class FeedbackPage extends StatelessWidget {
         title: Text(
           'Workout Summary',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: MediaQuery.of(context).size.width * 0.05, // Responsive font size
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -28,7 +28,7 @@ class FeedbackPage extends StatelessWidget {
       body: Container(
         color: Color.fromARGB(255, 0, 43, 79),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05), // Responsive padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -36,11 +36,11 @@ class FeedbackPage extends StatelessWidget {
                 'Today\'s Workout Summary',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: MediaQuery.of(context).size.width * 0.06, // Responsive font size
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02), // Responsive spacing
               Expanded(
                 child: ListView.builder(
                   itemCount: completedExercises.length,
@@ -58,7 +58,7 @@ class FeedbackPage extends StatelessWidget {
                     return Card(
                       color: Colors.white.withOpacity(0.1),
                       child: Padding(
-                        padding: const EdgeInsets.all(10.0),
+                        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02), // Responsive padding
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -66,32 +66,32 @@ class FeedbackPage extends StatelessWidget {
                               exerciseName,
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 5),
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.01), // Responsive spacing
                             Text(
                               '$sets sets, $reps reps',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
-                                fontSize: 16,
+                                fontSize: MediaQuery.of(context).size.width * 0.04, // Responsive font size
                               ),
                             ),
-                            SizedBox(height: 5),
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.01), // Responsive spacing
                             Text(
                               'Body Parts: ${bodyParts.join(", ")}',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
-                                fontSize: 16,
+                                fontSize: MediaQuery.of(context).size.width * 0.04, // Responsive font size
                               ),
                             ),
-                            SizedBox(height: 5),
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.01), // Responsive spacing
                             Text(
                               'Stats Gained:',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: MediaQuery.of(context).size.width * 0.04, // Responsive font size
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -101,12 +101,11 @@ class FeedbackPage extends StatelessWidget {
                                   '${entry.key.capitalize()}: +${entry.value}',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.8),
-                                    fontSize: 16,
+                                    fontSize: MediaQuery.of(context).size.width * 0.04, // Responsive font size
                                   ),
                                 );
                               }
-                              return SizedBox
-                                  .shrink(); // Skip stats with zero value
+                              return SizedBox.shrink(); // Skip stats with zero value
                             }).toList(),
                           ],
                         ),
@@ -115,7 +114,7 @@ class FeedbackPage extends StatelessWidget {
                   },
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02), // Responsive spacing
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushReplacement(
@@ -128,15 +127,19 @@ class FeedbackPage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Color.fromARGB(255, 0, 43, 79),
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.1, // Responsive horizontal padding
+                    vertical: MediaQuery.of(context).size.height * 0.02, // Responsive vertical padding
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius:
+                        BorderRadius.circular(MediaQuery.of(context).size.width * 0.02), // Responsive border radius
                   ),
                 ),
                 child: Text(
                   'Go to Home',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: MediaQuery.of(context).size.width * 0.05, // Responsive font size
                     fontWeight: FontWeight.bold,
                   ),
                 ),

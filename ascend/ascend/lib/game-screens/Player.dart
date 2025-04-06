@@ -16,7 +16,7 @@ class Player extends SpriteAnimationComponent with HasGameRef {
   bool isFlipped = false; // Track whether the character is flipped
   double stamina = 0;
   double strength = 0;
-  double jumpStrength = 0;
+  double jumpStrength = 50;
   double flexibility = 0;
   double endurance = 0;
   double gravity = 800;

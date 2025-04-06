@@ -1,7 +1,7 @@
 import 'package:ascend/pose_detect/painters/pose_painter.dart';
 import 'package:ascend/pose_detect/pose_detector_view.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; // For formatting the current day
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PushUpPage extends StatefulWidget {
@@ -22,7 +22,12 @@ class _PushUpPageState extends State<PushUpPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Push-Up Pose Detector'),
+        title: Text(
+          'Push-Up Pose Detector',
+          style: TextStyle(
+            fontSize: MediaQuery.of(context).size.width * 0.05, // Responsive font size
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -31,13 +36,18 @@ class _PushUpPageState extends State<PushUpPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                strokeWidth: MediaQuery.of(context).size.width * 0.01, // Responsive stroke width
+              ),
             );
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
                 'Error loading exercise details',
-                style: TextStyle(fontSize: 18, color: Colors.red),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
+                  color: Colors.red,
+                ),
               ),
             );
           } else if (snapshot.hasData && snapshot.data != null) {
@@ -46,7 +56,9 @@ class _PushUpPageState extends State<PushUpPage> {
             final reps = exerciseDetails['reps'] ?? 20; // Default to 20 reps
 
             return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.04, // Responsive padding
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -66,7 +78,7 @@ class _PushUpPageState extends State<PushUpPage> {
                       },
                     ),
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.02), // Responsive spacing
                 ],
               ),
             );
@@ -74,7 +86,10 @@ class _PushUpPageState extends State<PushUpPage> {
             return Center(
               child: Text(
                 'No exercise details found for today',
-                style: TextStyle(fontSize: 18, color: Colors.red),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
+                  color: Colors.red,
+                ),
               ),
             );
           }

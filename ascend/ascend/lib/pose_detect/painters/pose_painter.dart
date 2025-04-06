@@ -55,7 +55,6 @@ class PosePainter extends CustomPainter {
   static int leftBicepCurlCounter = 0; // Counter for left bicep curls
   static bool hasGoneDownLeftBicepCurl = false; // Flag for left bicep curls
 
-
   static int currentSet = 0; // Track the current set
 
   // Method to dynamically determine the current pose
@@ -91,8 +90,6 @@ class PosePainter extends CustomPainter {
 
     leftBicepCurlCounter = 0;
     hasGoneDownLeftBicepCurl = false;
-
-
 
     currentSet = 0;
   }
@@ -438,7 +435,6 @@ class PosePainter extends CustomPainter {
     }
   }
 
-
   // Helper methods to check positions
   bool isAtBottomPositionPushUp(
       double shoulderAngle, double elbowAngle, double kneeAngle) {
@@ -502,7 +498,6 @@ class PosePainter extends CustomPainter {
         shoulderAngle <= 30;
   }
 
-  
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;

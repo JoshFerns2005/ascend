@@ -24,7 +24,12 @@ class _CrunchPageState extends State<CrunchPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Crunch Pose Detector'),
+        title: Text(
+          'Crunch Pose Detector',
+          style: TextStyle(
+            fontSize: MediaQuery.of(context).size.width * 0.05, // Responsive font size
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -33,13 +38,18 @@ class _CrunchPageState extends State<CrunchPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                strokeWidth: MediaQuery.of(context).size.width * 0.01, // Responsive stroke width
+              ),
             );
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
                 'Error loading exercise details',
-                style: TextStyle(fontSize: 18, color: Colors.red),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
+                  color: Colors.red,
+                ),
               ),
             );
           } else if (snapshot.hasData && snapshot.data != null) {
@@ -48,7 +58,9 @@ class _CrunchPageState extends State<CrunchPage> {
             final reps = exerciseDetails['reps'] ?? 20; // Default to 20 reps
 
             return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.04, // Responsive padding
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -58,7 +70,7 @@ class _CrunchPageState extends State<CrunchPage> {
                       exerciseName: exerciseName, // Pass the exercise name
                       sets: sets, // Dynamically fetched sets
                       reps: reps, // Dynamically fetched reps
-                    onExerciseCompleted: () {
+                      onExerciseCompleted: () {
                         // Mark the exercise as completed
                         setState(() {
                           exerciseCompleted = true;
@@ -68,7 +80,7 @@ class _CrunchPageState extends State<CrunchPage> {
                       },
                     ),
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.02), // Responsive spacing
                 ],
               ),
             );
@@ -76,7 +88,10 @@ class _CrunchPageState extends State<CrunchPage> {
             return Center(
               child: Text(
                 'No exercise details found for today',
-                style: TextStyle(fontSize: 18, color: Colors.red),
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.045, // Responsive font size
+                  color: Colors.red,
+                ),
               ),
             );
           }

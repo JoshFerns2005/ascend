@@ -1,8 +1,10 @@
 import 'package:ascend/main-screens/home-screen.dart';
+import 'package:ascend/start-screen/privacypolicy.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ascend/registrations/userbodydetails.dart'; // Import the user details form screen
+import 'package:ascend/registrations/userbodydetails.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountScreen extends StatefulWidget {
   @override
@@ -10,8 +12,12 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  // Supabase instance initialization
   late final SupabaseClient supabase;
+  final GoogleSignIn _googleSignInInstance = GoogleSignIn(
+    // Renamed this
+    serverClientId:
+        '1057307033858-qfvliijtf970eu6i210ttj9b1it7gn3r.apps.googleusercontent.com',
+  );
 
   @override
   void initState() {
@@ -19,38 +25,128 @@ class _AccountScreenState extends State<AccountScreen> {
     supabase = Supabase.instance.client;
   }
 
-  // Google Sign-In method
-  Future<void> _googleSignIn(BuildContext context) async {
-    try {
-      // Add your webClientId here for Google Sign-In configuration
-      const webClientId = '1057307033858-qfvliijtf970eu6i210ttj9b1it7gn3r.apps.googleusercontent.com';
+  Future<void> _handleNavigation(BuildContext context, String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isPolicyAccepted = prefs.getBool('privacy_policy_accepted') ?? false;
+    final hasUserDetails = await _checkUserDetails(userId);
 
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        serverClientId: webClientId, // Set the serverClientId to your webClientId
+    if (!isPolicyAccepted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PrivacyPolicyScreen(
+            onAccept: () =>
+                _navigateAfterPolicy(context, userId, hasUserDetails),
+          ),
+        ),
       );
+    } else {
+      _navigateToAppropriateScreen(context, userId, hasUserDetails);
+    }
+  }
 
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+  Future<bool> _checkUserDetails(String userId) async {
+    final response = await supabase
+        .from('userdetails')
+        .select()
+        .eq('user_id', userId)
+        .maybeSingle();
+    return response != null;
+  }
 
-      if (googleUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-In was canceled.')),
-        );
-        return;
+  void _navigateAfterPolicy(
+      BuildContext context, String userId, bool hasUserDetails) {
+    if (!hasUserDetails) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => UserDetailsForm()),
+      );
+    } else {
+      _navigateToHome(context, userId);
+    }
+  }
+
+  void _navigateToAppropriateScreen(
+      BuildContext context, String userId, bool hasUserDetails) {
+    if (!hasUserDetails) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => UserDetailsForm()),
+      );
+    } else {
+      _navigateToHome(context, userId);
+    }
+  }
+
+  void _navigateToHome(BuildContext context, String userId) async {
+  try {
+    // Fetch the user's authentication data
+    final userData = await supabase.auth.getUser();
+
+    // Extract the display_name (username) from the user's metadata
+    final username = userData.user?.userMetadata?['full_name'] ??
+        userData.user?.email ??
+        'User'; // Fallback to email or "User" if no display_name exists
+
+    // Navigate to the HomeScreen with the username
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(username: username),
+      ),
+    );
+  } catch (error) {
+    debugPrint('Error fetching user data: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to fetch user data: $error')),
+    );
+  }
+}
+
+  Future<void> _initializeUserStats(String userId) async {
+    try {
+      // Check if the user already has a row in the statistics table
+      final response = await supabase
+          .from('statistics')
+          .select()
+          .eq('user_id', userId)
+          .limit(1);
+
+      if (response.isEmpty) {
+        // No stats exist for the user, so create a new row
+        await supabase.from('statistics').insert({
+          'user_id': userId,
+          'strength': 0,
+          'stamina': 0,
+          'jump_strength': 0,
+          'flexibility': 0,
+          'endurance': 0,
+        });
+        debugPrint('New stats row created for user: $userId');
+      } else {
+        debugPrint('Stats row already exists for user: $userId');
       }
+    } catch (error) {
+      debugPrint('Error initializing stats: $error');
+    }
+  }
 
-      // Get authentication details
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    try {
+      // Authenticate the user with Google
+      final GoogleSignInAccount? googleUser =
+          await _googleSignInInstance.signIn();
+      if (googleUser == null) return;
+
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
       final accessToken = googleAuth.accessToken;
 
       if (idToken == null || accessToken == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Missing tokens.')),
-        );
-        return;
+        throw Exception('Missing Google tokens');
       }
 
-      // Use Supabase to sign in with the Google tokens
+      // Sign in with Supabase
       final authResponse = await supabase.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
@@ -58,37 +154,17 @@ class _AccountScreenState extends State<AccountScreen> {
       );
 
       if (authResponse.user != null) {
-        // Check if user details already exist
         final userId = authResponse.user!.id;
-        final response = await supabase.from('userdetails').select().eq('user_id', userId).maybeSingle();
 
-        if (response == null) {
-          // User doesn't have details, navigate to the UserDetailsForm page
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UserDetailsForm(), // Navigate to the form screen
-            ),
-          );
-        } else {
-          // User already has details, proceed to the main page or dashboard
-          final username = authResponse.user!.userMetadata?['full_name'] ?? 'User';
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomeScreen(username: username), // Pass username to HomeScreen
-            ),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Authentication failed.')),
-        );
+        // Initialize the user's stats in the statistics table
+        await _initializeUserStats(userId);
+
+        // Handle navigation based on privacy policy and user details
+        await _handleNavigation(context, userId);
       }
     } catch (error) {
-      print("Error during Google Sign-In: $error");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error during Google Sign-In: $error')),
+        SnackBar(content: Text('Error: $error')),
       );
     }
   }
@@ -99,39 +175,39 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: Color.fromARGB(255, 1, 31, 55),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                children: [
-                  Image.asset(
-                    'assets/images/Ascend.png',
-                    height: 300,
-                    width: 300,
+              Image.asset(
+                'assets/images/Ascend.png',
+                height: MediaQuery.of(context).size.width * 0.6,
+                width: MediaQuery.of(context).size.width * 0.6,
+              ),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.04),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    vertical: MediaQuery.of(context).size.height * 0.02,
                   ),
-                  SizedBox(height: 30),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white, // Button color
-                      padding: EdgeInsets.symmetric(vertical: 15), // Reduced padding
-                      minimumSize: Size(double.infinity, 50), // Increased width
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(90), // Rounded corners
-                      ),
-                    ),
-                    onPressed: () => _googleSignIn(context), // Google Sign-In button
-                    child: Text(
-                      'Sign in with Google',
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 1, 31, 55), // Text color
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  minimumSize: Size(double.infinity,
+                      MediaQuery.of(context).size.height * 0.06),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.05),
                   ),
-                ],
+                ),
+                onPressed: () =>
+                    _signInWithGoogle(context), // Updated reference
+                child: Text(
+                  'Sign in with Google',
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 1, 31, 55),
+                    fontSize: MediaQuery.of(context).size.width * 0.045,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),

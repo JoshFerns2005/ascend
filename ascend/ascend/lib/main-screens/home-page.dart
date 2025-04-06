@@ -1,10 +1,12 @@
 import 'package:ascend/game-screens/GameScreen.dart';
 import 'package:ascend/game-screens/Navigator.dart';
+import 'package:ascend/main-screens/AiQuote.dart';
 import 'package:ascend/workouts/dailyworkout.dart';
 import 'package:ascend/workouts/workoutschedule.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -18,9 +20,47 @@ class _HomePageState extends State<HomePage> {
   String? characterName;
   String? gender;
   Map<String, int> stats = {};
+  String _motivationalQuote =
+      "Loading motivational quote..."; // Initialize with default value
+  final QuoteGenerator _quoteGenerator =  QuoteGenerator(
+    geminiApiKey: 'AIzaSyBmScpYT1HKfP1cuGu9l3xEj693OKZ9w04',
+  );
+  bool _isLoadingQuote = true;
+
   void initState() {
     super.initState();
     _fetchCharacterAndStats();
+    _loadNewQuote();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload quote when app resumes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadNewQuote();
+    });
+  }
+
+  Future<void> _loadNewQuote() async {
+    setState(() => _isLoadingQuote = true);
+    try {
+      final newQuote = await _quoteGenerator.generateExerciseQuote();
+      if (mounted) {
+        setState(() {
+          _motivationalQuote = newQuote;
+          _isLoadingQuote = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading quote: $e');
+      if (mounted) {
+        setState(() {
+          _motivationalQuote = 'Failed to load quote.';
+          _isLoadingQuote = false;
+        });
+      }
+    }
   }
 
   Future<void> _fetchCharacterAndStats() async {
@@ -143,16 +183,28 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             Container(
-              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
-              margin: EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(
+                vertical: MediaQuery.of(context).size.height *
+                    0.02, // Responsive vertical padding
+                horizontal: MediaQuery.of(context).size.width *
+                    0.05, // Responsive horizontal padding
+              ),
+              margin: EdgeInsets.all(MediaQuery.of(context).size.width *
+                  0.04), // Responsive margin
               decoration: BoxDecoration(
                 color: Color.fromARGB(255, 0, 43, 79),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(
+                    MediaQuery.of(context).size.width *
+                        0.04), // Responsive border radius
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
+                    blurRadius: MediaQuery.of(context).size.width *
+                        0.02, // Responsive blur radius
+                    offset: Offset(
+                        0,
+                        MediaQuery.of(context).size.height *
+                            0.01), // Responsive shadow offset
                   ),
                 ],
               ),
@@ -168,7 +220,8 @@ class _HomePageState extends State<HomePage> {
                             'Loading...',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: MediaQuery.of(context).size.width *
+                                  0.05, // Responsive font size
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -179,7 +232,8 @@ class _HomePageState extends State<HomePage> {
                             'Error loading schedule',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: MediaQuery.of(context).size.width *
+                                  0.06, // Responsive font size
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -188,9 +242,9 @@ class _HomePageState extends State<HomePage> {
                           snapshot.data!.isNotEmpty) {
                         final schedule = snapshot.data!;
                         final orderedSchedule = _getOrderedSchedule(schedule);
-
                         return Container(
-                          height: MediaQuery.of(context).size.height * 0.35,
+                          height: MediaQuery.of(context).size.height *
+                              0.4, // Responsive height
                           child: PageView(
                             controller: _pageController,
                             children: [
@@ -215,8 +269,11 @@ class _HomePageState extends State<HomePage> {
                                     }
 
                                     return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8.0),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                              0.01), // Responsive vertical padding
                                       child: Text.rich(
                                         TextSpan(
                                           text: '${item['day_of_week']}: ',
@@ -225,7 +282,10 @@ class _HomePageState extends State<HomePage> {
                                                 ? FontWeight.bold
                                                 : FontWeight.normal,
                                             color: Colors.white,
-                                            fontSize: 18,
+                                            fontSize: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.045, // Responsive font size
                                           ),
                                           children: [
                                             TextSpan(
@@ -236,7 +296,10 @@ class _HomePageState extends State<HomePage> {
                                                 fontWeight: FontWeight.normal,
                                                 color: Colors.white
                                                     .withOpacity(0.9),
-                                                fontSize: 16,
+                                                fontSize: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.04, // Responsive font size
                                               ),
                                             ),
                                           ],
@@ -253,7 +316,15 @@ class _HomePageState extends State<HomePage> {
                               Container(
                                 color: Color.fromARGB(255, 0, 43, 79),
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(0,20.0,20,20),
+                                  padding: EdgeInsets.fromLTRB(
+                                    0,
+                                    MediaQuery.of(context).size.height *
+                                        0.02, // Responsive top padding
+                                    MediaQuery.of(context).size.width *
+                                        0.04, // Responsive right padding
+                                    MediaQuery.of(context).size.height *
+                                        0.02, // Responsive bottom padding
+                                  ),
                                   child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -262,9 +333,15 @@ class _HomePageState extends State<HomePage> {
                                       Expanded(
                                         flex: 2,
                                         child: Container(
-                                          width: 400, // Full width for the image
-                                          height:
-                                              500, // Adjust height as needed
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.4, // 40% of screen width
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.4 *
+                                              1.25, // Maintain aspect ratio
                                           decoration: BoxDecoration(
                                             image: DecorationImage(
                                               image: AssetImage(
@@ -280,8 +357,16 @@ class _HomePageState extends State<HomePage> {
                                       Expanded(
                                         flex: 3,
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,vertical: 30),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.03, // Responsive horizontal padding
+                                            vertical: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.03, // Responsive vertical padding
+                                          ),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -289,43 +374,79 @@ class _HomePageState extends State<HomePage> {
                                               Text(
                                                 'Strength: ${stats['Strength']}',
                                                 style: TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: MediaQuery.of(
+                                                              context)
+                                                          .size
+                                                          .width *
+                                                      0.04, // Responsive font size
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                 ),
                                               ),
-                                              SizedBox(height: 10),
+                                              SizedBox(
+                                                  height: MediaQuery.of(context)
+                                                          .size
+                                                          .height *
+                                                      0.01), // Responsive spacing
                                               Text(
                                                 'Stamina: ${stats['Stamina']}',
                                                 style: TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: MediaQuery.of(
+                                                              context)
+                                                          .size
+                                                          .width *
+                                                      0.04, // Responsive font size
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                 ),
                                               ),
-                                              SizedBox(height: 10),
+                                              SizedBox(
+                                                  height: MediaQuery.of(context)
+                                                          .size
+                                                          .height *
+                                                      0.01), // Responsive spacing
                                               Text(
                                                 'Jump Strength: ${stats['Jump Strength']}',
                                                 style: TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: MediaQuery.of(
+                                                              context)
+                                                          .size
+                                                          .width *
+                                                      0.04, // Responsive font size
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                 ),
                                               ),
-                                              SizedBox(height: 10),
+                                              SizedBox(
+                                                  height: MediaQuery.of(context)
+                                                          .size
+                                                          .height *
+                                                      0.01), // Responsive spacing
                                               Text(
                                                 'Flexibility: ${stats['Flexibility']}',
                                                 style: TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: MediaQuery.of(
+                                                              context)
+                                                          .size
+                                                          .width *
+                                                      0.04, // Responsive font size
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                 ),
                                               ),
-                                              SizedBox(height: 10),
+                                              SizedBox(
+                                                  height: MediaQuery.of(context)
+                                                          .size
+                                                          .height *
+                                                      0.01), // Responsive spacing
                                               Text(
                                                 'Endurance: ${stats['Endurance']}',
                                                 style: TextStyle(
-                                                  fontSize: 16,
+                                                  fontSize: MediaQuery.of(
+                                                              context)
+                                                          .size
+                                                          .width *
+                                                      0.04, // Responsive font size
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                 ),
@@ -338,16 +459,32 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                               ), // Motivational quote page
-                              Center(
-                                child: Text(
-                                  motivationalQuote,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
+                              // Motivational quote page
+                              _isLoadingQuote
+                                  ? Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(
+                                            MediaQuery.of(context).size.width *
+                                                0.05),
+                                        child: Text(
+                                          _motivationalQuote,
+                                          style: TextStyle(
+                                            fontSize: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.06,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
                             ],
                           ),
                         );
@@ -357,7 +494,8 @@ class _HomePageState extends State<HomePage> {
                             'No schedule found',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: MediaQuery.of(context).size.width *
+                                  0.06, // Responsive font size
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -369,37 +507,62 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            SizedBox(height: 20),
-
+            SizedBox(
+              height: MediaQuery.of(context).size.height *
+                  0.02, // Responsive spacing
+            ),
             // New Button: "The Game"
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width *
+                    0.05, // Responsive horizontal padding
+              ),
               child: GestureDetector(
                 onTap: () {
                   GameNavigator.navigateToGame(context);
                 },
                 child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 15),
+                  padding: EdgeInsets.symmetric(
+                    vertical: MediaQuery.of(context).size.height *
+                        0.02, // Responsive vertical padding
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(
+                      MediaQuery.of(context).size.width *
+                          0.03, // Responsive border radius
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: Offset(0, 5),
+                        blurRadius: MediaQuery.of(context).size.width *
+                            0.02, // Responsive blur radius
+                        offset: Offset(
+                          0,
+                          MediaQuery.of(context).size.height *
+                              0.01, // Responsive shadow offset
+                        ),
                       ),
                     ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.play_arrow, color: Colors.blue, size: 30),
-                      SizedBox(width: 10),
+                      Icon(
+                        Icons.play_arrow,
+                        color: Colors.blue,
+                        size: MediaQuery.of(context).size.width *
+                            0.08, // Responsive icon size
+                      ),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width *
+                            0.02, // Responsive spacing
+                      ),
                       Text(
                         'Start Game',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: MediaQuery.of(context).size.width *
+                              0.045, // Responsive font size
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
                         ),
@@ -410,23 +573,33 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            SizedBox(height: 20),
+            SizedBox(
+              height: MediaQuery.of(context).size.height *
+                  0.02, // Responsive spacing
+            ),
 
             // Quick Actions Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width *
+                    0.05, // Responsive horizontal padding
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Quick Actions',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: MediaQuery.of(context).size.width *
+                          0.045, // Responsive font size
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height *
+                        0.01, // Responsive spacing
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -462,29 +635,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            SizedBox(height: 20),
-
-            // Section: Recommendations
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Recommendations',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  _buildRecommendationCard(
-                      'Full Body HIIT', 'Burn 400 kcal in 20 minutes!'),
-                  _buildRecommendationCard(
-                      'Morning Yoga', 'Improve flexibility and relax.'),
-                ],
-              ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height *
+                  0.02, // Responsive spacing
             ),
           ],
         ),
@@ -495,30 +648,50 @@ class _HomePageState extends State<HomePage> {
   // Function to build individual statistic cards
   Widget _buildStatCard(String title, int value, IconData icon, Color color) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 5),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.symmetric(
+        vertical: MediaQuery.of(context).size.height *
+            0.005, // Responsive vertical margin
+      ),
+      padding: EdgeInsets.all(
+          MediaQuery.of(context).size.width * 0.02), // Responsive padding
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(
+          MediaQuery.of(context).size.width * 0.02, // Responsive border radius
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
-            blurRadius: 5,
-            offset: Offset(0, 2),
+            blurRadius: MediaQuery.of(context).size.width *
+                0.01, // Responsive blur radius
+            offset: Offset(
+              0,
+              MediaQuery.of(context).size.height *
+                  0.005, // Responsive shadow offset
+            ),
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
-          SizedBox(width: 10),
+          Icon(
+            icon,
+            color: color,
+            size: MediaQuery.of(context).size.width *
+                0.06, // Responsive icon size
+          ),
+          SizedBox(
+            width:
+                MediaQuery.of(context).size.width * 0.02, // Responsive spacing
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: MediaQuery.of(context).size.width *
+                      0.035, // Responsive font size
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -526,7 +699,8 @@ class _HomePageState extends State<HomePage> {
               Text(
                 value.toString(),
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: MediaQuery.of(context).size.width *
+                      0.04, // Responsive font size
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -538,7 +712,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Function to build quick action cards
   Widget _buildQuickActionCard(
     String title,
     IconData icon,
@@ -549,44 +722,44 @@ class _HomePageState extends State<HomePage> {
       child: GestureDetector(
         onTap: onTapAction,
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 5),
-          padding: EdgeInsets.all(15),
+          margin: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width *
+                0.01, // Responsive horizontal margin
+          ),
+          padding: EdgeInsets.all(
+              MediaQuery.of(context).size.width * 0.03), // Responsive padding
           decoration: BoxDecoration(
             color: Color.fromARGB(255, 0, 43, 79),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(
+              MediaQuery.of(context).size.width *
+                  0.03, // Responsive border radius
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: color, size: 30),
-              SizedBox(height: 10),
+              Icon(
+                icon,
+                color: color,
+                size: MediaQuery.of(context).size.width *
+                    0.08, // Responsive icon size
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height *
+                    0.01, // Responsive spacing
+              ),
               Text(
                 title,
                 style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold, color: color),
+                  fontSize: MediaQuery.of(context).size.width *
+                      0.035, // Responsive font size
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // Function to build recommendation cards
-  Widget _buildRecommendationCard(String title, String subtitle) {
-    return Card(
-      color: Color.fromARGB(255, 0, 43, 79),
-      margin: EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        leading: Icon(Icons.recommend, color: Colors.white),
-        title: Text(title,
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.white)),
-        trailing: Icon(Icons.arrow_forward, color: Colors.white),
-        onTap: () {
-          // Add functionality for recommendation click
-        },
       ),
     );
   }

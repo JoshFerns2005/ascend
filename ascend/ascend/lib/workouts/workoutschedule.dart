@@ -44,7 +44,8 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   // Function to fetch the user's ID and schedule
   Future<void> loadUserIdAndSchedule() async {
     try {
-      final user = supabase.auth.currentUser; // Get current user from Supabase auth
+      final user =
+          supabase.auth.currentUser; // Get current user from Supabase auth
       if (user == null) {
         print('No user logged in');
         return;
@@ -81,7 +82,8 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
   }
 
   // Update the selected exercises for a specific day
-  void updateSelectedExercises(String exercise, bool isSelected, {int sets = 0, int reps = 0, int timeLimit = 0}) {
+  void updateSelectedExercises(String exercise, bool isSelected,
+      {int sets = 0, int reps = 0, int timeLimit = 0}) {
     setState(() {
       workoutSchedule[selectedDay] ??= [];
       if (isSelected) {
@@ -92,7 +94,8 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
           'time_limit': timeLimit,
         });
       } else {
-        workoutSchedule[selectedDay]!.removeWhere((item) => item['exercise'] == exercise);
+        workoutSchedule[selectedDay]!
+            .removeWhere((item) => item['exercise'] == exercise);
       }
     });
   }
@@ -148,7 +151,11 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
       appBar: AppBar(
         title: Text(
           'Workout Schedule',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: MediaQuery.of(context).size.width *
+                0.05, // Responsive font size
+          ),
         ),
         backgroundColor: Color.fromARGB(255, 0, 43, 79),
         automaticallyImplyLeading: false,
@@ -157,7 +164,8 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
         children: [
           // Left-hand side: Days of the week
           Container(
-            width: MediaQuery.of(context).size.width * 0.4, // 40% of screen width
+            width:
+                MediaQuery.of(context).size.width * 0.4, // 40% of screen width
             color: Color.fromARGB(255, 240, 240, 240),
             child: ListView.builder(
               itemCount: days.length,
@@ -167,8 +175,12 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                   title: Text(
                     day,
                     style: TextStyle(
-                      fontWeight: selectedDay == day ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: selectedDay == day
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: selectedDay == day ? Colors.blue : Colors.black,
+                      fontSize: MediaQuery.of(context).size.width *
+                          0.04, // Responsive font size
                     ),
                   ),
                   onTap: () {
@@ -183,15 +195,22 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
           // Right-hand side: Exercise selection
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width *
+                  0.04), // Responsive padding
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Exercises for $selectedDay:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width *
+                          0.045, // Responsive font size
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.02), // Responsive spacing
                   Expanded(
                     child: ListView.builder(
                       itemCount: exercises.length,
@@ -201,9 +220,14 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                         final isSelected = workoutSchedule[selectedDay]
                                 ?.any((item) => item['exercise'] == exercise) ??
                             false;
-
                         return ExpansionTile(
-                          title: Text(exercise),
+                          title: Text(
+                            exercise,
+                            style: TextStyle(
+                              fontSize: MediaQuery.of(context).size.width *
+                                  0.04, // Responsive font size
+                            ),
+                          ),
                           leading: Checkbox(
                             value: isSelected,
                             onChanged: (bool? value) {
@@ -229,10 +253,17 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                             },
                           ),
                           children: workoutSchedule[selectedDay]
-                                  ?.where((item) => item['exercise'] == exercise)
+                                  ?.where(
+                                      (item) => item['exercise'] == exercise)
                                   .map((item) => ListTile(
                                         title: Text(
-                                              'Sets: ${item['sets']}, Reps: ${item['reps']}',
+                                          'Sets: ${item['sets']}, Reps: ${item['reps']}',
+                                          style: TextStyle(
+                                            fontSize: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.035, // Responsive font size
+                                          ),
                                         ),
                                       ))
                                   .toList() ??
@@ -251,7 +282,8 @@ class _WorkoutSchedulePageState extends State<WorkoutSchedulePage> {
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
                         backgroundColor: Color.fromARGB(255, 0, 43, 79),
-                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                       ),
                     ),
                   ),
@@ -283,7 +315,7 @@ class _ExerciseDetailsDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-           if (exercise != 'Rest') ...[
+          if (exercise != 'Rest') ...[
             TextField(
               controller: setsController,
               keyboardType: TextInputType.number,

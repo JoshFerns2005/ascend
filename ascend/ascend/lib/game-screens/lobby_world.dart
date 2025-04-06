@@ -68,7 +68,7 @@ class LobbyWorld extends FlameGame {
     // Initialize the player with reduced width
     player = Player(platform, selectedGender, selectedCharacter)
       ..size = Vector2(90, 90)
-      ..position = Vector2(size.x / 2, platform.y - 120)
+      ..position = Vector2(size.x / 2, platform.y -90)
       ..priority = 2;
     add(player);
 

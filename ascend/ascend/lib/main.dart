@@ -1,4 +1,6 @@
 import 'package:ascend/game-screens/lobby_world.dart';
+import 'package:ascend/main-screens/AiNutrition.dart';
+import 'package:ascend/main-screens/nutrition.dart';
 import 'package:ascend/start-screen/splashscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -21,6 +23,11 @@ void main() async {
 
   runApp(MyApp());
 }
+
+final aiNutritionService = AINutritionService(
+  supabaseClient: Supabase.instance.client,
+  geminiApiKey: 'AIzaSyBmScpYT1HKfP1cuGu9l3xEj693OKZ9w04',
+);
 
 class MyApp extends StatelessWidget {
   @override
