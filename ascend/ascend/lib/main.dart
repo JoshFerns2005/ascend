@@ -5,7 +5,7 @@ import 'package:ascend/start-screen/splashscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/services.dart'; // Import for SystemChrome
+import 'package:flutter/services.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +15,6 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // Set default orientation to portrait
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

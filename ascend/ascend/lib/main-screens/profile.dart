@@ -243,6 +243,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   initialValue: weight,
                                   decoration: InputDecoration(
                                     labelText: 'Weight (kg)',
+                                    labelStyle: TextStyle(color: Colors.white),
+                                    filled: true,
+                                    fillColor: Colors.blueGrey,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           MediaQuery.of(context).size.width *
@@ -269,6 +272,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   initialValue: height,
                                   decoration: InputDecoration(
                                     labelText: 'Height (cm)',
+                                    labelStyle: TextStyle(color: Colors.white),
+                                    filled: true,
+                                    fillColor: Colors.blueGrey,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           MediaQuery.of(context).size.width *
@@ -295,6 +301,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   initialValue: age,
                                   decoration: InputDecoration(
                                     labelText: 'Age',
+                                    labelStyle: TextStyle(color: Colors.white),
+                                    filled: true,
+                                    fillColor: Colors.blueGrey,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           MediaQuery.of(context).size.width *
@@ -320,6 +329,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   value: currentPhysique,
                                   decoration: InputDecoration(
                                     labelText: 'Current Physique',
+                                    labelStyle: TextStyle(color: Colors.white),
+                                    filled: true,
+                                    fillColor: Colors.blueGrey,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           MediaQuery.of(context).size.width *
@@ -360,6 +372,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   value: idealPhysique,
                                   decoration: InputDecoration(
                                     labelText: 'Ideal Physique',
+                                    labelStyle: TextStyle(color: Colors.white),
+                                    filled: true,
+                                    fillColor: Colors.blueGrey,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(
                                           MediaQuery.of(context).size.width *
@@ -380,7 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 fontSize: MediaQuery.of(context)
                                                         .size
                                                         .width *
-                                                    0.04, // Responsive font size
+                                                    0.04,
                                               ),
                                             ),
                                           ))
@@ -394,7 +409,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 SizedBox(
                                     height: MediaQuery.of(context).size.height *
-                                        0.03), // Responsive spacing
+                                        0.03), 
 // Save and Cancel Buttons
                                 Row(
                                   mainAxisAlignment:

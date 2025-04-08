@@ -24,17 +24,14 @@ class LobbyWorld extends FlameGame {
   late ButtonComponent jumpButton;
   late ButtonComponent attackButton;
   late ButtonComponent hitButton;
-  int unlockedLevels = 1; // Start with only level 1 unlocked
-
+  int unlockedLevels = 1; 
   bool isLeftPressed = false;
   bool isRightPressed = false;
 
-  // Reset counter
   int resetCounter = 0;
 
-  // Boundaries (not needed for endless loop)
-  final double leftBoundary = 0; // Left boundary of the game world
-  late double rightBoundary; // Dynamically set right boundary
+  final double leftBoundary = 0; 
+  late double rightBoundary;
 
   LobbyWorld({
     required this.selectedGender,
@@ -43,16 +40,13 @@ class LobbyWorld extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    // Reset the game state twice before loading components
     await resetGameTwice();
 
-    // Add the static background
     final background = SpriteComponent()
       ..sprite = await loadSprite('game_images/background.jpg')
-      ..size = size; // Stretch the background to fit the screen
+      ..size = size; 
     add(background);
 
-    // Load the platform
     final platform = Platform(Constants.screenWidth)
       ..position = Vector2(0, size.y - 50)
       ..width = size.x;
@@ -61,37 +55,29 @@ class LobbyWorld extends FlameGame {
     final portal = Portal(
       position: Vector2(size.x - 200, size.y - 300),
       unlockedLevels: unlockedLevels,
-      // Adjust position as needed
     );
     add(portal);
 
-    // Initialize the player with reduced width
     player = Player(platform, selectedGender, selectedCharacter)
       ..size = Vector2(90, 90)
-      ..position = Vector2(size.x / 2, platform.y -90)
+      ..position = Vector2(size.x / 2, platform.y - 90)
       ..priority = 2;
     add(player);
 
-    // Set right boundary based on screen width and player width
     rightBoundary = Constants.screenWidth - 80;
 
-    // Configure the camera to follow the player
     camera.follow(player);
 
-    // Add Left, Right, Jump, and Hit buttons
     addButtons();
 
-    // Add Leaderboard Signboard
     addLeaderboardSignboard();
 
-    // Register the leaderboard overlay
     overlays.addEntry(
       'LeaderboardOverlay',
       (BuildContext context, Game game) =>
           LeaderboardOverlay(game: game as LobbyWorld),
     );
 
-    // Add the NPC
     final npc = Npc(
       position: Vector2(size.x / 2 - 300, platform.y - 120),
     );
@@ -99,45 +85,26 @@ class LobbyWorld extends FlameGame {
   }
 
   Future<void> startLevel1() async {
-    // Show loading overlay
     overlays.add('loading');
-
-    // Wait for next frame to ensure clean transition
     await Future.delayed(Duration.zero);
 
-    // Remove ALL components including the player
-    children.whereType<Player>().forEach((p) => p.removeFromParent());
-    children.whereType<World>().forEach((w) => w.removeFromParent());
-    children.whereType<CameraComponent>().forEach((c) => c.removeFromParent());
+    children.whereType<World>().firstOrNull?.removeFromParent();
 
-    // Create fresh level instance
     final level1 = Level1(
       selectedGender: selectedGender,
       selectedCharacter: selectedCharacter,
+      buildContext: buildContext!,
     );
 
-    // Setup camera
     final camera = CameraComponent(world: level1)
       ..viewfinder.anchor = Anchor.topLeft;
 
-    // Add new level
     addAll([level1, camera]);
 
-    // Wait for level to fully load
-    try {
-      await level1.onLoad();
-      debugPrint('Level 1 loaded successfully - no duplicates');
-    } catch (e) {
-      debugPrint('Error loading Level 1: $e');
-      // Fallback: Return to lobby
-      _returnToLobby();
-    } finally {
-      overlays.remove('loading');
-    }
+    overlays.remove('loading');
   }
 
   void _returnToLobby() {
-    // Recreate lobby state if level fails to load
     final platform = Platform(Constants.screenWidth)
       ..position = Vector2(0, size.y - 50);
     add(platform);
@@ -155,21 +122,17 @@ class LobbyWorld extends FlameGame {
   void completeLevel(int level) {
     if (level == unlockedLevels) {
       unlockedLevels++;
-      // Save progress (you might want to use shared_preferences)
     }
   }
 
-  // Method to add the leaderboard signboard
   void addLeaderboardSignboard() async {
-    // Create the leaderboard signboard component
     final leaderboardSignboard = LeaderboardSignboard()
       ..sprite = await loadSprite(
-          'game_images/leaderboard.png') // Load the leaderboard image
-      ..size = Vector2(150, 100) // Set the size of the leaderboard signboard
-      ..position = Vector2(size.x - 400, size.y / 2) // Position it
-      ..priority = 1; // Ensure it's above the background but below the player
+          'game_images/leaderboard.png')
+      ..size = Vector2(150, 100) 
+      ..position = Vector2(size.x - 400, size.y / 2) 
+      ..priority = 1;
 
-    // Add the leaderboard signboard to the game world
     add(leaderboardSignboard);
   }
 
@@ -331,6 +294,7 @@ class LobbyWorld extends FlameGame {
     add(jumpButton);
     add(attackButton);
   }
+  
 }
 
 class LeaderboardSignboard extends SpriteComponent

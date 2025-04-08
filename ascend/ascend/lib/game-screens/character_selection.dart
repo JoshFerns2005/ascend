@@ -58,7 +58,6 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
     super.dispose();
   }
 
-  // Check if the username is unique
   Future<bool> _checkUsernameAvailability(String username) async {
     final response = await supabase
         .from('user_character')
@@ -66,10 +65,10 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
         .eq('username', username)
         .maybeSingle();
 
-    return response == null; // If response is null, username is available
+    return response == null;
   }
 
-  // Save character, gender, and username to the database
+ 
 Future<void> _saveCharacterAndUsername(
     String character, String gender, String username) async {
   final user = supabase.auth.currentUser;
@@ -96,7 +95,7 @@ Future<void> _saveCharacterAndUsername(
       print('Step 5: Supabase Response: $response');
 
       print('Step 6: Showing success snackbar');
-      if (!mounted) return; // Ensure the widget is still mounted
+      if (!mounted) return; 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -107,7 +106,7 @@ Future<void> _saveCharacterAndUsername(
       });
 
       print('Step 7: Navigating to GameScreenWrapper');
-      if (!mounted) return; // Ensure the widget is still mounted
+      if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.push(
           context,
@@ -122,7 +121,7 @@ Future<void> _saveCharacterAndUsername(
       print('Step 8: Navigation completed');
     } catch (e) {
       print('Error caught: $e');
-      if (!mounted) return; // Ensure the widget is still mounted
+      if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
 
       });
@@ -132,7 +131,6 @@ Future<void> _saveCharacterAndUsername(
 
   @override
   Widget build(BuildContext context) {
-    // Split characters into male and female lists
     final List<Map<String, String>> maleCharacters =
         characters.where((character) => character['gender'] == 'male').toList();
     final List<Map<String, String>> femaleCharacters = characters
@@ -148,7 +146,6 @@ Future<void> _saveCharacterAndUsername(
         color: Color.fromARGB(200, 0, 43, 79),
         child: Column(
           children: [
-            // Username Input Field
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
@@ -174,7 +171,6 @@ Future<void> _saveCharacterAndUsername(
                 },
               ),
             ),
-            // Title above the grid
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
@@ -186,20 +182,17 @@ Future<void> _saveCharacterAndUsername(
                 ),
               ),
             ),
-            // Male and Female Characters with Divider
             Expanded(
               child: Row(
                 children: [
-                  // Male Characters Section
+                 
                   Expanded(
                     child: _buildCharacterColumn(maleCharacters, context),
                   ),
-                  // Vertical Divider
                   Container(
                     width: 2,
                     color: Colors.white,
                   ),
-                  // Female Characters Section
                   Expanded(
                     child: _buildCharacterColumn(femaleCharacters, context),
                   ),
@@ -212,7 +205,6 @@ Future<void> _saveCharacterAndUsername(
     );
   }
 
-  // Helper method to build a column of character cards
   Widget _buildCharacterColumn(
       List<Map<String, String>> characters, BuildContext context) {
     return ListView.builder(
@@ -243,11 +235,9 @@ Future<void> _saveCharacterAndUsername(
                 return;
               }
 
-              // Pass both character name and gender to the callback
               widget.onCharacterSelected(
                   character['name']!, character['gender']!);
 
-              // Save character, gender, and username to the database
               await _saveCharacterAndUsername(
                 character['name']!,
                 character['gender']!,
@@ -260,15 +250,13 @@ Future<void> _saveCharacterAndUsername(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Character image
                   Image.asset(
                     character['image']!,
                     fit: BoxFit.contain,
-                    width: 120, // Increased size
-                    height: 120, // Increased size
+                    width: 120, 
+                    height: 120,
                   ),
                   SizedBox(height: 10),
-                  // Character name
                   Text(
                     character['name'] ?? 'Unknown Character',
                     textAlign: TextAlign.center,

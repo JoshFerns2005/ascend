@@ -1,15 +1,21 @@
+import 'package:ascend/game-screens/healthbar.dart';
+import 'package:ascend/game-screens/levels/level1.dart';
 import 'package:ascend/game-screens/lobby_world.dart';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
+import 'package:flutter/material.dart';
 import 'platform.dart';
 import 'constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'firedemon.dart';
 
 final supabase = Supabase.instance.client;
 final user = supabase.auth.currentUser;
 final userid = user?.id;
 
-class Player extends SpriteAnimationComponent with HasGameRef {
+class Player extends SpriteAnimationComponent
+    with HasGameRef, CollisionCallbacks {
   final Platform platform;
   final String selectedCharacter; // Name of the character (e.g., warrior)
   final String selectedGender; // Gender of the character (e.g., male)
@@ -26,6 +32,8 @@ class Player extends SpriteAnimationComponent with HasGameRef {
   bool isRunning = false; // Flag to track if the player is running
   bool isFacingRight = true; // Track the direction the player is facing
   bool isAttacking = false;
+  double maxHealth = 100;
+  double currentHealth = 100;
 
   // Animation states (nullable to handle missing data)
   SpriteAnimation? idleAnimation;
@@ -34,7 +42,8 @@ class Player extends SpriteAnimationComponent with HasGameRef {
   SpriteAnimation? jumpAnimation;
   SpriteAnimation? hitAnimation;
   SpriteAnimation? attackAnimation; // New attack animation
-
+  SpriteAnimation? hurtAnimation;
+  SpriteAnimation? deathAnimation;
   // Constructor accepts selected gender
   Player(this.platform, this.selectedCharacter, this.selectedGender)
       : super(size: Vector2(200, 200)); // Increased size
@@ -101,6 +110,10 @@ class Player extends SpriteAnimationComponent with HasGameRef {
     // Set the initial position
     position = Vector2(Constants.screenWidth * 0.8 / 2,
         platform.y - height); // Start on the platform
+    add(RectangleHitbox(
+      size: Vector2(width * 0.6, height * 0.8),
+      position: Vector2(width * 0.2, height * 0.1),
+    ));
   }
 
   // Load all animations dynamically
@@ -110,6 +123,8 @@ class Player extends SpriteAnimationComponent with HasGameRef {
     // await _loadRunLeftAnimation();
     await _loadJumpAnimation();
     await _loadAttackAnimation(); // Load attack animation
+    await _loadHurtAnimation();
+    await _loadDeathAnimation();
   }
 
   Future<void> loadStats() async {
@@ -149,6 +164,54 @@ class Player extends SpriteAnimationComponent with HasGameRef {
         srcSize: Vector2(128, 128), // Dimensions of each frame
       );
       idleAnimation = spriteSheet.createAnimation(
+        row: 0, // Row index in the sprite sheet
+        stepTime: 0.1, // Time per frame
+        from: animationData['start_frame'], // Start frame
+        to: animationData['end_frame'], // End frame
+      );
+    } catch (e) {
+      print('Error creating idle animation: $e');
+    }
+  }
+
+  Future<void> _loadHurtAnimation() async {
+    final animationData =
+        await fetchAnimationData(selectedCharacter, selectedGender, 'hurt');
+    if (animationData.isEmpty) {
+      print('Failed to load hurt animation.');
+      return;
+    }
+    try {
+      final spriteSheet = SpriteSheet(
+        image: await gameRef.images.load(animationData['file_path']),
+        srcSize: Vector2(128, 128), // Dimensions of each frame
+      );
+      hurtAnimation = spriteSheet.createAnimation(
+        row: 0, // Row index in the sprite sheet
+        stepTime: 0.1, // Time per frame
+        from: animationData['start_frame'], // Start frame
+        to: animationData['end_frame'], // End frame
+      );
+      print("Hurt animation loaded successfully.");
+      print('animationData: $animationData');
+    } catch (e) {
+      print('Error creating hurt animation: $e');
+    }
+  }
+
+  Future<void> _loadDeathAnimation() async {
+    final animationData =
+        await fetchAnimationData(selectedCharacter, selectedGender, 'dead');
+    if (animationData.isEmpty) {
+      print('Failed to load death animation.');
+      return;
+    }
+    try {
+      final spriteSheet = SpriteSheet(
+        image: await gameRef.images.load(animationData['file_path']),
+        srcSize: Vector2(128, 128), // Dimensions of each frame
+      );
+      deathAnimation = spriteSheet.createAnimation(
         row: 0, // Row index in the sprite sheet
         stepTime: 0.1, // Time per frame
         from: animationData['start_frame'], // Start frame
@@ -264,6 +327,10 @@ class Player extends SpriteAnimationComponent with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
+    if (isHurt && hurtAnimation != null) {
+      animation = hurtAnimation;
+      return; // Don't process other animations while hurt
+    }
 
     // Apply gravity
     velocityY += gravity * dt;
@@ -319,6 +386,7 @@ class Player extends SpriteAnimationComponent with HasGameRef {
         isFlipped = false;
       }
     }
+    if (isAttacking) checkAttackCollisions();
 
     // Check if the player is on the platform
     if (position.y + height >= platform.y &&
@@ -342,6 +410,122 @@ class Player extends SpriteAnimationComponent with HasGameRef {
     }
   }
 
+  bool isHurt = false;
+
+  void hurt() {
+    if (isDead || isHurt || hurtAnimation == null) return;
+
+    currentHealth -= 10;
+    currentHealth = currentHealth.clamp(0, maxHealth);
+    print('Player health: $currentHealth');
+
+    if (currentHealth <= 0) {
+      die(); // Trigger death instead of hurt animation
+      return;
+    }
+
+    // Only play hurt animation if not dead
+    isHurt = true;
+    animation = hurtAnimation;
+
+    Future.delayed(Duration(milliseconds: 500), () {
+      isHurt = false;
+      if (!isDead && idleAnimation != null) {
+        animation = idleAnimation;
+      }
+    });
+  }
+
+  bool isDead = false;
+
+  void die() {
+    if (isDead || deathAnimation == null) return;
+
+    print('🔥 Player is dying');
+    isDead = true;
+
+    // Stop all other animations and behaviors
+    isRunning = false;
+    isAttacking = false;
+    isHurt = false;
+
+    // Set the death animation
+    animation = deathAnimation;
+
+    // Use the animation's onComplete callback
+    animationTicker?.onComplete = () {
+      _completeDeath();
+    };
+
+    // Fallback in case animationTicker doesn't fire
+    final deathDuration = deathAnimation!.frames.length * 0.1;
+    Future.delayed(Duration(milliseconds: (deathDuration * 1000).toInt()), () {
+      if (!isDead) return; // Already handled
+      _completeDeath();
+    });
+  }
+
+  void _completeDeath() {
+    print('☠️ Death animation complete');
+    if (gameRef.buildContext == null || !gameRef.buildContext!.mounted) return;
+
+    // Pause the game before navigating
+    gameRef.pauseEngine();
+
+    // Navigate back to home
+    Navigator.of(gameRef.buildContext!).pop();
+  }
+
+  // Add this to your Player class
+  void checkAttackCollisions() {
+    if (!isAttacking) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (lastAttackTime != null && now - lastAttackTime! < 500) {
+      return; // Only allow one attack every 500ms
+    }
+    lastAttackTime = now;
+
+    final potentialTargets = parent?.children.whereType<FireDemon>() ?? [];
+    print("Checking attack against ${potentialTargets.length} demons");
+
+    for (final demon in potentialTargets) {
+      if (_isInAttackRange(demon)) {
+        print("Attacking demon at ${demon.position}");
+        demon.takeDamage(10); // Fixed damage value for testing
+      }
+    }
+  }
+
+// Add this class variable
+  int? lastAttackTime;
+
+  bool _isInAttackRange(FireDemon demon) {
+    final distance = (position - demon.position).length;
+    final isFacingDemon = (isFacingRight && demon.position.x > position.x) ||
+        (!isFacingRight && demon.position.x < position.x);
+
+    final inRange = distance < 150;
+    print("""
+  Attack range check:
+  Distance: $distance
+  Facing: $isFacingDemon
+  In range: $inRange
+  """);
+
+    return isFacingDemon && inRange;
+  }
+
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollision(intersectionPoints, other);
+
+    if (other is FireBall) {
+      hurt(); // Call yorur animation trigger
+      print("Player hit by fireball!");
+    }
+  }
+
   void attack() {
     if (attackAnimation == null) {
       print('Attack animation not loaded.');
@@ -349,43 +533,37 @@ class Player extends SpriteAnimationComponent with HasGameRef {
     }
 
     if (!isAttacking) {
-      isAttacking = true; // Set attack state
-      animation = attackAnimation; // Set the attack animation
+      isAttacking = true;
+      animation = attackAnimation;
 
-      // Debugging: Verify the animation is set
+      // Check for collisions at the peak of the attack
+      Future.delayed(Duration(milliseconds: 200), () {
+        if (isAttacking) {
+          checkAttackCollisions();
+        }
+      });
 
-      // Use the onComplete callback of the SpriteAnimationTicker
       animationTicker?.onComplete = () {
-        isAttacking = false; // Reset attack state
-        animationTicker?.onComplete = null; // Clear the callback
-
-        // Reset flip state if facing left
+        isAttacking = false;
+        animationTicker?.onComplete = null;
         if (!isFacingRight && isFlipped) {
           flipHorizontallyAroundCenter();
           isFlipped = false;
         }
-
-        // Switch back to idle animation
         if (idleAnimation != null) {
           animation = idleAnimation;
         }
       };
 
-      // Fallback: Manually reset isAttacking after the attack animation duration
-      final attackDuration =
-          attackAnimation!.frames.length * 0.1; // Calculate duration
+      final attackDuration = attackAnimation!.frames.length * 0.1;
       Future.delayed(Duration(milliseconds: (attackDuration * 1000).toInt()),
           () {
         if (isAttacking) {
           isAttacking = false;
-
-          // Reset flip state if facing left
           if (!isFacingRight && isFlipped) {
             flipHorizontallyAroundCenter();
             isFlipped = false;
           }
-
-          // Switch back to idle animation
           if (idleAnimation != null) {
             animation = idleAnimation;
           }

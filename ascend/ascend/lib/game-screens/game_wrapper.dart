@@ -15,7 +15,6 @@ class _GameScreenWrapperState extends State<GameScreenWrapper> {
   @override
   void initState() {
     super.initState();
-    // Switch to landscape mode when entering the game screen
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -24,7 +23,6 @@ class _GameScreenWrapperState extends State<GameScreenWrapper> {
 
   @override
   void dispose() {
-    // Revert to portrait mode when leaving the game screen
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,

@@ -79,29 +79,29 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _navigateToHome(BuildContext context, String userId) async {
-  try {
-    // Fetch the user's authentication data
-    final userData = await supabase.auth.getUser();
+    try {
+      // Fetch the user's authentication data
+      final userData = await supabase.auth.getUser();
 
-    // Extract the display_name (username) from the user's metadata
-    final username = userData.user?.userMetadata?['full_name'] ??
-        userData.user?.email ??
-        'User'; // Fallback to email or "User" if no display_name exists
+      // Extract the display_name (username) from the user's metadata
+      final username = userData.user?.userMetadata?['full_name'] ??
+          userData.user?.email ??
+          'User'; // Fallback to email or "User" if no display_name exists
 
-    // Navigate to the HomeScreen with the username
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(username: username),
-      ),
-    );
-  } catch (error) {
-    debugPrint('Error fetching user data: $error');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to fetch user data: $error')),
-    );
+      // Navigate to the HomeScreen with the username
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(username: username),
+        ),
+      );
+    } catch (error) {
+      debugPrint('Error fetching user data: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch user data: $error')),
+      );
+    }
   }
-}
 
   Future<void> _initializeUserStats(String userId) async {
     try {
@@ -128,6 +128,17 @@ class _AccountScreenState extends State<AccountScreen> {
       }
     } catch (error) {
       debugPrint('Error initializing stats: $error');
+    }
+  }
+
+  Future<void> _signInWithAnotherAccount(BuildContext context) async {
+    try {
+      await _googleSignInInstance.signOut(); // Sign out first
+      await _signInWithGoogle(context); // Then proceed to sign-in
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $error')),
+      );
     }
   }
 
@@ -206,6 +217,21 @@ class _AccountScreenState extends State<AccountScreen> {
                     color: Color.fromARGB(255, 1, 31, 55),
                     fontSize: MediaQuery.of(context).size.width * 0.045,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+
+// 👇 Add this button
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+              TextButton(
+                onPressed: () => _signInWithAnotherAccount(context),
+                child: Text(
+                  'Sign in with another account',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: MediaQuery.of(context).size.width * 0.04,
+                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),

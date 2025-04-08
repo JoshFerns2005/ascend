@@ -1,29 +1,33 @@
 import 'package:ascend/game-screens/Player.dart';
 import 'package:ascend/game-screens/constants.dart';
+import 'package:ascend/game-screens/firedemon.dart';
 import 'package:ascend/game-screens/platform.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 
-class Level1 extends World with HasGameRef {
+class Level1 extends World with HasGameRef, HasCollisionDetection {
+  final BuildContext buildContext;
   final String selectedGender;
   final String selectedCharacter;
+
   late Player player;
   late Platform platform;
-  
+  late FireDemon fireDemon;
+  late TextComponent healthText;
+
   bool isLeftPressed = false;
   bool isRightPressed = false;
 
   Level1({
     required this.selectedGender,
     required this.selectedCharacter,
+    required this.buildContext,
   });
 
   @override
   Future<void> onLoad() async {
-    // No need to remove player here since LobbyWorld already cleared everything
-    
     // Background
     final background = SpriteComponent()
       ..sprite = await gameRef.loadSprite('game_images/background.jpg')
@@ -35,94 +39,117 @@ class Level1 extends World with HasGameRef {
       ..position = Vector2(0, gameRef.size.y - 50);
     add(platform);
 
-    // Create ONLY ONE player instance
+    // Player
     player = Player(platform, selectedGender, selectedCharacter)
       ..size = Vector2(90, 90)
       ..position = Vector2(gameRef.size.x / 2 + 500, platform.y - 120)
       ..priority = 2;
     add(player);
 
-    // Camera setup
-    gameRef.camera.follow(player);
+    // Health Text
+// Create a rounded rectangle background
+    final healthBackground = RectangleComponent(
+      size: Vector2(160, 40),
+      position: Vector2(10, 10),
+      anchor: Anchor.topLeft,
+      paint: Paint()
+        ..color = Colors.black.withOpacity(0.6)
+        ..style = PaintingStyle.fill,
+      priority: 99,
+    );
 
-    // Add control buttons
+// Optional: Add a border
+    final healthBorder = RectangleComponent(
+      size: Vector2(160, 40),
+      position: Vector2(10, 10),
+      anchor: Anchor.topLeft,
+      paint: Paint()
+        ..color = Colors.white.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+      priority: 98,
+    );
+
+// Health text with slight adjustment
+    healthText = TextComponent(
+      text:
+          'Health: ${player.currentHealth.toInt()}/${player.maxHealth.toInt()}',
+      position: Vector2(20, 20),
+      anchor: Anchor.topLeft,
+      priority: 100,
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(
+              color: Colors.black,
+              blurRadius: 2,
+              offset: Offset(1, 1),
+            )
+          ],
+        ),
+      ),
+    );
+
+// Add all components
+    add(healthBackground);
+    add(healthBorder);
+    add(healthText);
+
+    // FireDemon
+    final fireDemon = FireDemon(player,
+        Vector2(gameRef.size.x - 300, platform.y - 150), this, buildContext);
+    add(fireDemon);
+
+    // Add on-screen buttons
     addButtons();
 
     debugPrint('Level 1 player created - no duplicates');
   }
 
   void addButtons() {
-    // Left Button
-
-    // Left Button
     final leftButton = ButtonComponent(
       button: RectangleComponent(
-        size: Vector2(80, 80), // Size of the button
-        paint: Paint()
-          ..color = Colors.blue.withOpacity(0.5), // Semi-transparent blue color
+        size: Vector2(80, 80),
+        paint: Paint()..color = Colors.blue.withOpacity(0.5),
       ),
-      onPressed: () {
-        isLeftPressed = true; // Set flag when button is pressed
-      },
-      onReleased: () {
-        isLeftPressed = false; // Reset flag when button is released
-      },
-      position: Vector2(
-          40, gameRef.size.y - 100), // Positioned horizontally at the bottom-left
+      onPressed: () => isLeftPressed = true,
+      onReleased: () => isLeftPressed = false,
+      position: Vector2(40, gameRef.size.y - 100),
     );
 
-    // Right Button
     final rightButton = ButtonComponent(
       button: RectangleComponent(
-        size: Vector2(80, 80), // Size of the button
-        paint: Paint()
-          ..color = Colors.blue.withOpacity(0.5), // Semi-transparent blue color
+        size: Vector2(80, 80),
+        paint: Paint()..color = Colors.blue.withOpacity(0.5),
       ),
-      onPressed: () {
-        isRightPressed = true; // Set flag when button is pressed
-      },
-      onReleased: () {
-        isRightPressed = false; // Reset flag when button is released
-      },
-      position:
-          Vector2(140, gameRef.size.y - 100), // Positioned next to the Left button
+      onPressed: () => isRightPressed = true,
+      onReleased: () => isRightPressed = false,
+      position: Vector2(140, gameRef.size.y - 100),
     );
 
-    // Jump Button
     final jumpButton = ButtonComponent(
       button: RectangleComponent(
-        size: Vector2(80, 80), // Size of the button
-        paint: Paint()
-          ..color =
-              Colors.green.withOpacity(0.5), // Semi-transparent green color
+        size: Vector2(80, 80),
+        paint: Paint()..color = Colors.green.withOpacity(0.5),
       ),
       onPressed: () {
-        if (!player.isJumping) {
-          player
-              .jump(); // Call the jump method on the player only if not already jumping
-        }
+        if (!player.isJumping) player.jump();
       },
-      position: Vector2(
-          gameRef.size.x - 180,
-          gameRef.size.y -
-              100), // Positioned horizontally at the bottom, opposite to the Left/Right buttons
+      position: Vector2(gameRef.size.x - 180, gameRef.size.y - 100),
     );
 
-    // Hit Button
     final attackButton = ButtonComponent(
       button: RectangleComponent(
-        size: Vector2(80, 80), // Size of the button
-        paint: Paint()
-          ..color = Colors.red.withOpacity(0.5), // Semi-transparent red color
+        size: Vector2(80, 80),
+        paint: Paint()..color = Colors.red.withOpacity(0.5),
       ),
-      onPressed: () {
-        player.attack(); // Call the attack method on the player
-      },
-      position: Vector2(
-          gameRef.size.x - 90, gameRef.size.y - 100), // Positioned next to the Jump button
+      onPressed: () => player.attack(),
+      position: Vector2(gameRef.size.x - 90, gameRef.size.y - 100),
     );
 
-    // Add buttons to the game
     add(leftButton);
     add(rightButton);
     add(jumpButton);
@@ -132,16 +159,20 @@ class Level1 extends World with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
-    
-    // Movement handling
-    Vector2 movement = Vector2(0, 0);
+
+    // Update health display
+    healthText.text =
+        '${player.currentHealth.toInt()} / ${player.maxHealth.toInt()}';
+
+    // Handle movement
+    Vector2 movement = Vector2.zero();
     if (isLeftPressed) movement.x -= 1;
     if (isRightPressed) movement.x += 1;
     player.move(movement);
 
     // Screen wrapping
     if (player.position.x > Constants.screenWidth) {
-      player.position.x = 0 - player.width;
+      player.position.x = -player.width;
     } else if (player.position.x + player.width < 0) {
       player.position.x = Constants.screenWidth;
     }

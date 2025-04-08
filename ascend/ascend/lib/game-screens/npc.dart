@@ -5,14 +5,25 @@ import 'package:flame/events.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart';
 
-class Npc extends SpriteAnimationComponent with HasGameRef<LobbyWorld>, TapCallbacks {
+class Npc extends SpriteAnimationComponent
+    with HasGameRef<LobbyWorld>, TapCallbacks {
   final List<String> dialogueMessages = [
-    "Welcome to Ascend!",
-    "In this game, you can fight mobs and bosses across different levels.",
+    "Welcome to Ascend, adventurer.",
+    "This is not just a game — it’s your journey to power.",
+    "Across different levels, you’ll fight mobs, dodge projectiles, and face mighty bosses.",
+    "Portals will take you to these levels. Just step in… if you dare.",
     "Tap on the leaderboard signboard to see how you rank against others.",
-    "You'll find portals that take you to different levels.",
-    "Level 1 has 2 mobs to defeat. Level 2 has a powerful boss.",
-    "Good luck, adventurer!"
+    "But here’s the catch...",
+    "Your character is powered by *you* — your real-life workouts.",
+    "No workouts? Then your character won’t move an inch.",
+    "Ignore your fitness, and you’ll die a slow, pitiful death. Probably alone. Probably during a boss fight.",
+    "Each rep you complete gives you strength — both in-game and out.",
+    "Every squat, push-up, and jump fuels your fire.",
+    "Slack off, and your enemies will crush you. The FireDemon shows no mercy.",
+    "Train consistently, and you’ll rise through the ranks — maybe even reach the top of the leaderboard.",
+    "Remember: in Ascend, the grind is real — literally.",
+    "Are you ready to fight, train, and rise?",
+    "Then step forward, warrior... and begin your ascent.",
   ];
 
   Npc({required Vector2 position})

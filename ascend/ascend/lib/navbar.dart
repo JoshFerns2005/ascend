@@ -9,7 +9,7 @@ class BottomNavBar extends StatefulWidget {
     Key? key,
     required this.currentIndex,
     required this.onTap,
-    required this.items, // New items parameter
+    required this.items,
   }) : super(key: key);
 
   @override
@@ -22,11 +22,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
     return BottomNavigationBar(
       currentIndex: widget.currentIndex,
       onTap: widget.onTap,
-      type: BottomNavigationBarType.fixed, // Fixed for more than 3 items
+      type: BottomNavigationBarType.fixed,
       selectedItemColor: Colors.white,
       unselectedItemColor: const Color.fromARGB(255, 76, 76, 76),
       backgroundColor: Color.fromARGB(255, 0, 28, 50),
-      items: widget.items, // Using the items parameter
+      items: widget.items, 
     );
   }
 }

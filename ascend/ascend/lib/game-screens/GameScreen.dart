@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
-import 'lobby_world.dart'; // Import your LobbyWorld class
+import 'lobby_world.dart';  
 
 class GameScreen extends StatefulWidget {
   final String selectedCharacter;

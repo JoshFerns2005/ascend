@@ -2,24 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Leaderboard extends StatelessWidget {
-  // Supabase client
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Fetch user data with cumulative stats
   Future<List<Map<String, dynamic>>> fetchUserData() async {
-    // Fetch all user characters (to get usernames)
     final userCharactersResponse =
         await _supabase.from('user_character').select();
     final userCharacters = userCharactersResponse as List<dynamic>;
 
-    // Fetch all statistics
     final statisticsResponse = await _supabase.from('statistics').select();
     final statistics = statisticsResponse as List<dynamic>;
 
-    // Map to store cumulative stats for each user
     final Map<String, int> cumulativeStats = {};
 
-    // Calculate cumulative stats
     for (final stat in statistics) {
       final userId = stat['user_id'] as String;
       final strength = stat['strength'] as int;
@@ -28,13 +22,11 @@ class Leaderboard extends StatelessWidget {
       final flexibility = stat['flexibility'] as int;
       final endurance = stat['endurance'] as int;
 
-      // Sum all stats for cumulative value
       final totalStats =
           strength + stamina + jumpStrength + flexibility + endurance;
       cumulativeStats[userId] = (cumulativeStats[userId] ?? 0) + totalStats;
     }
 
-    // Combine user data with cumulative stats
     final List<Map<String, dynamic>> userData = [];
     for (final userCharacter in userCharacters) {
       final userId = userCharacter['user_id'] as String;
@@ -47,7 +39,6 @@ class Leaderboard extends StatelessWidget {
       });
     }
 
-    // Sort the data by stats in descending order
     userData.sort((a, b) => b['stats'].compareTo(a['stats']));
 
     return userData;
@@ -68,9 +59,9 @@ class Leaderboard extends StatelessWidget {
         ),
         leading: IconButton(
           icon:
-              Icon(Icons.arrow_back, color: Colors.white), // Custom back button
+              Icon(Icons.arrow_back, color: Colors.white), 
           onPressed: () {
-            Navigator.of(context).pop(); // Navigate back
+            Navigator.of(context).pop(); 
           },
         ),
       ),
@@ -92,7 +83,6 @@ class Leaderboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title
                 Text(
                   'Top Players',
                   style: TextStyle(
@@ -103,7 +93,6 @@ class Leaderboard extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
 
-                // Table Headers
                 Container(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
@@ -118,7 +107,6 @@ class Leaderboard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Rank Header
                       Text(
                         'Rank',
                         style: TextStyle(
@@ -127,7 +115,6 @@ class Leaderboard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      // Username Header
                       Text(
                         'Username',
                         style: TextStyle(
@@ -136,7 +123,6 @@ class Leaderboard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      // Power Header
                       Text(
                         'Power',
                         style: TextStyle(
@@ -149,7 +135,6 @@ class Leaderboard extends StatelessWidget {
                   ),
                 ),
 
-                // Leaderboard Table
                 Expanded(
                   child: ListView.builder(
                     itemCount: userData.length,
@@ -158,7 +143,6 @@ class Leaderboard extends StatelessWidget {
                       final username = user['username'];
                       final stats = user['stats'];
 
-                      // Alternate row colors for better readability
                       final isEvenRow = index % 2 == 0;
                       final rowColor = isEvenRow
                           ? Color.fromARGB(255, 0, 28, 50)
@@ -170,7 +154,6 @@ class Leaderboard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Rank
                             Text(
                               '#${index + 1}',
                               style: TextStyle(
@@ -179,7 +162,6 @@ class Leaderboard extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             ),
-                            // Username
                             Text(
                               username,
                               style: TextStyle(
@@ -188,7 +170,6 @@ class Leaderboard extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             ),
-                            // Stats (Power)
                             Text(
                               '$stats',
                               style: TextStyle(

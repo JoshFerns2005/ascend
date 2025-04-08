@@ -60,24 +60,47 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Show a confirmation dialog before exiting
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Do you want to close the app?'),
+            backgroundColor: Color.fromARGB(255, 0, 43, 79),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            title: const Text(
+              'Do you want to close the app?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: const Text(
+              'Your progress will be saved.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false), // Stay in the app
-                child: Text('No'),
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text(
+                  'No',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               TextButton(
-                onPressed: () => Navigator.of(context).pop(true), // Exit the app
-                child: Text('Yes'),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  'Yes',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
               ),
             ],
           ),
         );
-        return shouldExit ?? false; // Exit only if the user confirms
+        return shouldExit ?? false;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -85,14 +108,17 @@ class _HomeScreenState extends State<HomeScreen> {
             "Welcome",
             style: TextStyle(
               color: Colors.white,
-              fontSize: MediaQuery.of(context).size.width * 0.05, // Responsive font size
+              fontSize: MediaQuery.of(context).size.width *
+                  0.05, // Responsive font size
             ),
           ),
-          toolbarHeight: MediaQuery.of(context).size.height * 0.1, // Responsive toolbar height
+          toolbarHeight: MediaQuery.of(context).size.height *
+              0.1, // Responsive toolbar height
           backgroundColor: Color.fromARGB(255, 0, 28, 50),
           iconTheme: IconThemeData(
             color: Colors.white,
-            size: MediaQuery.of(context).size.width * 0.06, // Responsive icon size
+            size: MediaQuery.of(context).size.width *
+                0.06, // Responsive icon size
           ),
           automaticallyImplyLeading: false,
           actions: [
